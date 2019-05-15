@@ -1,0 +1,115 @@
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-sha256/0.9.0/sha256.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-sha512/0.8.0/sha512.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsSHA/2.3.1/sha256.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsSHA/2.3.1/sha512.js"></script>
+
+html hello
+<script>
+    //********************* invoke fetch: ***************************************//
+
+    get_server_nonce('http://172.16.10.62:8082/bs-core/auth/first-message', 'admin_mysql_sha1')
+        .then(success => {
+            resultA = success;
+            console.log(success);
+//         console.log(success.data.nonce);
+//         console.log(success.data.authMode);
+            return resultA;
+        })
+        .then(success => check_auth(
+            'http://172.16.10.62:8082/bs-core/auth/final-message',
+            'admin_mysql_sha1',
+            success.data.nonce,
+            success.data.encryptedNonce,
+            success.data.authMode
+        ))
+        .then(success => {
+            resultB = success;
+            return resultB;
+        })
+        .then(success => {
+            console.log('resultA: ' + resultA);
+            console.log('resultB: ' + resultB);
+        });
+
+
+    //********************* methods: ***************************************//
+    function get_server_nonce(action, userKey) {
+        const payload = {
+            userKey: userKey
+        };
+        return fetch(action, {
+            method: "POST",
+            body: JSON.stringify(payload),
+            headers: new Headers({
+                'Accept': 'application/json',
+                'customer-key' : 'qa',
+                'Content-type': 'application/json'
+            })
+        })
+            .then(r => r.json());
+    }
+    function check_auth(action,userKey,nonce,encryptedNonce,authMode) {
+        let p = 123654654654654654654;
+        let clientProof = p;//strXor(sha(p),(nonce+sha(sha(p)));
+
+        console.log('userKey: '+userKey);
+        console.log('nonce: '+nonce);
+        console.log('encryptedNonce: '+encryptedNonce);
+        console.log('clientProof: '+clientProof);
+        console.log('authMode: '+authMode);
+
+
+        clientProof = btoa(clientProof);
+        console.log('base64(clientProof): '+clientProof);
+        const payload = {
+            userKey: userKey,
+            nonce: nonce,
+            encryptedNonce: encryptedNonce,
+            authMode: authMode,
+            clientProof:'0c050651050403505456055a020452070c010211'
+        };
+        return fetch(action, {
+            method: "POST",
+            body: JSON.stringify(payload),
+            headers: new Headers({
+                'Accept': 'application/json',
+                'customer-key' : 'qa',
+                'Content-type': 'application/json'
+            })
+        })
+            .then(r => r.json());
+    }
+
+
+
+    //********************* other scripts: ***************************************//
+    function sha( data ) {
+        // let favoriteAlgo = 'sha512';
+        // return eval(favoriteAlgo)(data);
+        let favoriteAlgo = '';
+        switch (algo) {
+            case 'sha256':
+                favoriteAlgo = 'SHA-256';
+                break;
+            case 'sha512':
+                favoriteAlgo = 'SHA-512';
+                break;
+            default:
+                alert( 'Выбран неверный алгоритм хеширования' );
+        }
+        let shaObj = new jsSHA(favoriteAlgo,'TEXT');
+        shaObj.update(data);
+        return shaObj.getHash("HEX");
+    }
+
+    function strXor( a, b ) {
+        let len = Math.min( a.length, b.length );
+        let arr = new Array( len );
+        for( var i = 0; i < len; ++i )
+            arr[i] = a.charCodeAt(i) ^ b.charCodeAt(i);
+        return String.fromCharCode.apply( null, arr );
+    }
+</script>

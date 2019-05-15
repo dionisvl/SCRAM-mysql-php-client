@@ -19,7 +19,7 @@ use Bs\Sdk\Auth\Strategy\AuthStrategyDispatcher;
 $user_login = 'admin_mysql_sha1';
 $user_password = '123';
 
-$customer_key = '123123';
+$customer_key = 'qa';
 $client = new GuzzleHttp\Client();
 
 
