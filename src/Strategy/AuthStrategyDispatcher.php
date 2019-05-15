@@ -6,42 +6,57 @@
  * Паттерн "стратегия" для резолвинга метода аутентификации
  * (client side)
  */
+namespace Bs\Sdk\Auth\Strategy;
 
-use AuthEncryptors\OpensslHash;
-use AuthEncryptors\PhpHash;
+use Bs\Sdk\Auth\Encryptors\OpensslHash;
+use Bs\Sdk\Auth\Encryptors\PhpHash;
+use Exception;
 
 
 class AuthStrategyDispatcher
 {
-    public function resolveStrategy($data)
+//    private $encryptor;
+//
+//    /**
+//     * @param mixed $encryptor
+//     */
+//    public function setEncryptor($encryptor): void
+//    {
+//        $this->encryptor = $encryptor;
+//    }
+
+
+    public function resolveStrategy($data): IAuthStrategy
     {
-        try {
+//        try {
             switch ($data['protocolVersion']) {
-                case 'mysql':
+                case 'MYSQL':
                     $inst = new MySqlAuthStrategy();
                     $inst->setHashAlg($data['hashAlg']);
                     $inst->setHashCount($data['hashCount']);
+                    $inst->setServerNonce($data['nonce']);
                     switch ($data['encrypter']) {
                         case 'openssl':
-                            $this->setEncrypter(new OpensslHash());
+                            $inst->setEncryptor(new OpensslHash());
                             break;
                         case 'phphash':
-                            $this->setEncrypter(new PhpHash());
+                            $inst->setEncryptor(new PhpHash());
                             break;
                         default:
                             throw new \RuntimeException('Error: Bad encrypter version: '. $data['encrypter']);
                     }
                     break;
-                case 'scram':
+                case 'SCRAM':
                     $inst = new ScramAuthStrategy();
                     $inst->setHashAlg($data['hashAlg']);
                     $inst->setHashCount($data['hashCount']);
+                    $inst->setServerNonce($data['nonce']);
                     switch ($data['encrypter']) {
                         case 'openssl':
-                            $this->setEncrypter(new OpensslHash());
+                            $inst->setEncrypter(new OpensslHash());
                             break;
                         case 'phphash':
-                            $this->setEncrypter(new PhpHash());
+                            $inst->setEncrypter(new PhpHash());
                             break;
                         default:
                             throw new \RuntimeException('Error: Bad encrypter version: '. $data['encrypter']);
@@ -58,8 +73,8 @@ class AuthStrategyDispatcher
             }
 
             return $inst;
-        } catch (Exception $e) {
-            throw new \RuntimeException('Ошибка, нехватает полей от сервера: ',  $e->getMessage(), "\n");
-        }
+//        } catch (Exception $e) {
+//            throw new \RuntimeException('Ошибка, нехватает полей от сервера: ',  $e->getMessage(), "\n");
+//        }
     }
 }

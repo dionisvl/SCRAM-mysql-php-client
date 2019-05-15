@@ -1,6 +1,8 @@
 <?php
 
 
+namespace Bs\Sdk\Auth\Strategy;
+
 class ScramAuthStrategy extends AbstractAuthStrategy implements IAuthStrategy
 {
 
@@ -42,8 +44,6 @@ class ScramAuthStrategy extends AbstractAuthStrategy implements IAuthStrategy
     }
 
 
-
-
     /**
      * @return mixed
      */
@@ -69,15 +69,13 @@ class ScramAuthStrategy extends AbstractAuthStrategy implements IAuthStrategy
     }
 
 
-
-
-
     public function createClientProof($password)
     {
-        return $this->compute($password) ^ $this->compute($this->getServerNonce().$this->hashPassword($password));
+        return $this->compute($password) ^ $this->compute($this->getServerNonce() . $this->hashPassword($password));
     }
 
-    private function compute($mystring){
+    private function compute($mystring)
+    {
         return ($this->getEncrypter())->hash($mystring, $this->getHashAlg());
     }
 
@@ -86,9 +84,10 @@ class ScramAuthStrategy extends AbstractAuthStrategy implements IAuthStrategy
      * @param $data
      * @return mixed
      */
-    private function hashPassword($data){
+    private function hashPassword($data)
+    {
         $i = 0;
-        while ($i<$this->getHashCount()){
+        while ($i < $this->getHashCount()) {
             $data = $this->compute($data);
             $i++;
         }

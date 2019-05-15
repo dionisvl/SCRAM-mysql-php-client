@@ -1,5 +1,12 @@
 {
+    "autoload": {
+        "psr-4": {
+            "Bs\\Sdk\\Auth\\": "src"
+        }
+    },
     "require": {
-        "guzzlehttp/guzzle": "^6.3"
+        "guzzlehttp/guzzle": "^6.3",
+        "ext-openssl": "*",
+        "ext-json": "*"
     }
 }

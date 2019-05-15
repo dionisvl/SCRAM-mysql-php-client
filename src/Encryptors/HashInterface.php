@@ -1,7 +1,7 @@
 <?php
 
 
-namespace AuthEncryptors;
+namespace Bs\Sdk\Auth\Encryptors;
 
 
 interface HashInterface

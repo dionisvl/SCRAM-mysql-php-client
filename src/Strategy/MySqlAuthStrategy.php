@@ -1,5 +1,7 @@
 <?php
 
+namespace Bs\Sdk\Auth\Strategy;
+
 
 class MySqlAuthStrategy extends AbstractAuthStrategy implements IAuthStrategy
 {
@@ -7,7 +9,6 @@ class MySqlAuthStrategy extends AbstractAuthStrategy implements IAuthStrategy
     private $hashAlg;
     private $hashCount;
     private $server_nonce;
-    private $signature;
 
     /**
      * @param mixed $hashAlg
@@ -32,15 +33,6 @@ class MySqlAuthStrategy extends AbstractAuthStrategy implements IAuthStrategy
     {
         $this->server_nonce = $server_nonce;
     }
-
-    /**
-     * @param mixed $signature
-     */
-    public function setSignature($signature): void
-    {
-        $this->signature = $signature;
-    }
-
 
 
 
@@ -74,11 +66,17 @@ class MySqlAuthStrategy extends AbstractAuthStrategy implements IAuthStrategy
 
     public function createClientProof($password)
     {
-        return $this->compute($password) ^ $this->compute($this->getServerNonce().$this->hashPassword($password));
+        //В Mysql пароль хешируется по формуле SELECT SHA1(UNHEX(SHA1('123')));
+        $stored_hashed_password = $this->compute($this->unhex($this->compute($password)));
+        $server_nonce = $this->getServerNonce();
+
+        print_r($server_nonce.PHP_EOL);
+        print_r($stored_hashed_password.PHP_EOL);
+        return $this->compute($password) ^ $this->compute($server_nonce.$stored_hashed_password);
     }
 
     private function compute($mystring){
-        return ($this->getEncrypter())->hash($mystring, $this->getHashAlg());
+        return ($this->getEncryptor())->hash($mystring, $this->getHashAlg());
     }
 
     /**
@@ -93,5 +91,9 @@ class MySqlAuthStrategy extends AbstractAuthStrategy implements IAuthStrategy
             $i++;
         }
         return $data;
+    }
+
+    private function unhex($hexstring) {
+        return pack('H*', $hexstring);
     }
 }
