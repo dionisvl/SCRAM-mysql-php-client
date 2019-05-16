@@ -51,8 +51,8 @@ $strategy = $dispatcher->resolveStrategy($params);
 /* 2.1 Сгенерируем client proof */
 $client_proof = $strategy->createClientProof($user_password);
 pre('$client_proof: '.$client_proof.PHP_EOL);
-$client_proof = bin2hex($client_proof);
-pre('bin2hex($client_proof): '.$client_proof.PHP_EOL);
+//$client_proof = bin2hex($client_proof);
+//pre('bin2hex($client_proof): '.$client_proof.PHP_EOL);
 /* 3 отправим серверу CP На проверку */
 
 
@@ -76,9 +76,11 @@ try {
         'json' => $request
     ]);
 } catch (\GuzzleHttp\Exception\RequestException $e) {
-    pre(': '.json_encode(json_decode($e->getResponse()->getBody()), 128 + 256));
+    pre('$response body: '.json_encode(json_decode($e->getResponse()->getBody()), 128 + 256));
 }
 
+$arr = json_decode((string)$response->getBody(), true);
+pre($arr);
 
 function pre($arr){
     echo '<pre>';

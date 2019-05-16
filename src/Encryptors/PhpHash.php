@@ -10,9 +10,9 @@ namespace Bs\Sdk\Auth\Encryptors;
  */
 class PhpHash implements HashInterface
 {
-    public function hash($string, $algo): string
+    public function hash($string, $algo,$raw_output = FALSE): string
     {
-        return hash($algo, $string);
+        return hash($algo, $string,$raw_output);
     }
 
 }

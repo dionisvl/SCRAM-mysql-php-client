@@ -4,9 +4,14 @@
 /storage/*.key
 /vendor
 .env
+/.idea
 .phpunit.result.cache
 Homestead.json
 Homestead.yaml
 npm-debug.log
 yarn-error.log
+<<<<<<< HEAD
 .idea
+=======
+.idea
+>>>>>>> 298c724aad143799be13f0be5925db0f34f2524b

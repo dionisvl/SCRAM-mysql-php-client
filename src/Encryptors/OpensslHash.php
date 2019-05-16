@@ -11,8 +11,8 @@ namespace Bs\Sdk\Auth\Encryptors;
  */
 class OpensslHash implements HashInterface
 {
-    public function hash($string, $algo): string
+    public function hash($string, $algo,$raw_output = FALSE): string
     {
-        return openssl_digest($string, $algo);
+        return openssl_digest($string, $algo,$raw_output);
     }
 }
