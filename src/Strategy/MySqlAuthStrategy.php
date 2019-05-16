@@ -60,40 +60,19 @@ class MySqlAuthStrategy extends AbstractAuthStrategy implements IAuthStrategy
         return $this->server_nonce;
     }
 
-
-
-
-
-    public function createClientProof($password)
+    public function createClientProof($p)
     {
         //В Mysql пароль хешируется по формуле SELECT SHA1(UNHEX(SHA1('123')));
-        $stored_hashed_password = $this->compute($this->unhex($this->compute($password)));
-        $server_nonce = $this->getServerNonce();
+        $nonce = $this->getServerNonce();
 
-        print_r($server_nonce.PHP_EOL);
-        print_r($stored_hashed_password.PHP_EOL);
-        return $this->compute($password) ^ $this->compute($server_nonce.$stored_hashed_password);
+        $client_proof_binary = $this->compute($p,1) ^ $this->compute(hex2bin($nonce.$this->compute($this->compute($p,1),0)),1);
+        //$client_proof_binary = hex2bin(sha1($p)) ^ hex2bin(sha1(hex2bin($nonce.sha1(hex2bin(sha1($p))))));
+        $client_proof_hex = bin2hex($client_proof_binary);
+
+        return $client_proof_hex;
     }
 
-    private function compute($mystring){
-        return ($this->getEncryptor())->hash($mystring, $this->getHashAlg());
-    }
-
-    /**
-     * Метод для многократного хеширования
-     * @param $data
-     * @return mixed
-     */
-    private function hashPassword($data){
-        $i = 0;
-        while ($i<$this->getHashCount()){
-            $data = $this->compute($data);
-            $i++;
-        }
-        return $data;
-    }
-
-    private function unhex($hexstring) {
-        return pack('H*', $hexstring);
+    private function compute($mystring,$raw_output){
+        return ($this->getEncryptor())->hash($mystring, $this->getHashAlg(),$raw_output);
     }
 }
