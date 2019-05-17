@@ -15,15 +15,15 @@ html hello
     //********************* invoke fetch: ***************************************//
     let algo = 'SHA1';
 
-    let hashCount = 0;
+    let iterationCount = 0;
     let protocolVer = 2;
 
     var params  = {
         action: 'http://172.16.10.62:8082/bs-core/auth/first-message',
-        userKey: 'admin_mysql_sha1',
+        userName: 'admin_mysql_sha1',
         customer_key : 'qa'
     };
-    get_server_nonce(params)
+    get_serverNonce(params)
         .then(success => {
             resultA = success;
             console.log(success);
@@ -31,9 +31,9 @@ html hello
         })
         .then(success => check_auth(
             'http://172.16.10.62:8082/bs-core/auth/final-message',
-            params.userKey,
+            params.userName,
             success.data.nonce,
-            success.data.encryptedNonce,
+            success.data.encryptedServerNonce,
             success.data.authMode,
             params.customer_key
         ))
@@ -45,9 +45,9 @@ html hello
 
 
     //********************* methods: ***************************************//
-    function get_server_nonce(params) {
+    function get_serverNonce(params) {
         const payload = {
-            userKey: params.userKey
+            userName: params.userName
         };
 
         return fetch(params.action, {
@@ -61,23 +61,23 @@ html hello
         })
             .then(r => r.json());
     }
-    function check_auth(action,userKey,nonce,encryptedNonce,authMode,customer_key) {
+    function check_auth(action,userName,nonce,encryptedServerNonce,authMode,customer_key) {
         // nonce = 'D1CDFD86BDC80C9ABE5BE3835B13DCCB4AF7A453';
 
         let protocolVersion = authMode.split('_')[0];
         algo = authMode.split('_')[1];
         console.log('algo: '+algo);
         console.log('protocolVersion: '+protocolVersion);
-        nonce = nonce.toLowerCase();
+        serverNonce = serverNonce.toLowerCase();
 
         let p = 123;
 
         let clientProof = strXor(hex2bin(sha(p)) , hex2bin(sha_b64(hex2bin(nonce + sha_b64(hex2bin(sha(p)))))));
 
         const payload = {
-            userKey: userKey,
-            nonce: nonce,
-            encryptedNonce: encryptedNonce,
+            userName: userName,
+            serverNonce: serverNonce,
+            encryptedServerNonce: encryptedServerNonce,
             authMode: authMode,
             clientProof: bin2hex(clientProof)
         };

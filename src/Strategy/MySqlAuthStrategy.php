@@ -7,8 +7,8 @@ class MySqlAuthStrategy extends AbstractAuthStrategy implements IAuthStrategy
 {
 
     private $hashAlg;
-    private $hashCount;
-    private $server_nonce;
+    private $iterationCount;
+    private $serverNonce;
 
     /**
      * @param mixed $hashAlg
@@ -19,19 +19,19 @@ class MySqlAuthStrategy extends AbstractAuthStrategy implements IAuthStrategy
     }
 
     /**
-     * @param mixed $hashCount
+     * @param mixed $iterationCount
      */
-    public function setHashCount($hashCount): void
+    public function setiterationCount($iterationCount): void
     {
-        $this->hashCount = $hashCount;
+        $this->iterationCount = $iterationCount;
     }
 
     /**
-     * @param mixed $server_nonce
+     * @param mixed $serverNonce
      */
-    public function setServerNonce($server_nonce): void
+    public function setServerNonce($serverNonce): void
     {
-        $this->server_nonce = $server_nonce;
+        $this->serverNonce = $serverNonce;
     }
 
 
@@ -47,9 +47,9 @@ class MySqlAuthStrategy extends AbstractAuthStrategy implements IAuthStrategy
     /**
      * @return mixed
      */
-    public function getHashCount()
+    public function getiterationCount()
     {
-        return $this->hashCount;
+        return $this->iterationCount;
     }
 
     /**
@@ -57,16 +57,16 @@ class MySqlAuthStrategy extends AbstractAuthStrategy implements IAuthStrategy
      */
     public function getServerNonce()
     {
-        return $this->server_nonce;
+        return $this->serverNonce;
     }
 
     public function createClientProof($p)
     {
         //В Mysql пароль хешируется по формуле SELECT SHA1(UNHEX(SHA1('123')));
-        $nonce = $this->getServerNonce();
+        $serverNonce = $this->getServerNonce();
 
-        $client_proof_binary = $this->compute($p,1) ^ $this->compute(hex2bin($nonce.$this->compute($this->compute($p,1),0)),1);
-        //$client_proof_binary = hex2bin(sha1($p)) ^ hex2bin(sha1(hex2bin($nonce.sha1(hex2bin(sha1($p))))));
+        $client_proof_binary = $this->compute($p,1) ^ $this->compute(hex2bin($serverNonce.$this->compute($this->compute($p,1),0)),1);
+        //$client_proof_binary = hex2bin(sha1($p)) ^ hex2bin(sha1(hex2bin($serverNonce.sha1(hex2bin(sha1($p))))));
         $client_proof_hex = bin2hex($client_proof_binary);
 
         return $client_proof_hex;

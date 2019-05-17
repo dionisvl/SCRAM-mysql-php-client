@@ -1,4 +1,5 @@
 <?php
+
 namespace Bs\Sdk\Auth\Strategy;
 
 
@@ -15,7 +16,7 @@ abstract class AbstractAuthStrategy implements IAuthStrategy
     }
 
     /**
-     * @param mixed $encrypter
+     * @param mixed $encryptor
      */
     public function setEncryptor($encryptor): void
     {
