@@ -30,9 +30,9 @@ $client = new GuzzleHttp\Client();
 $clientNonce = (new RandomString())->handle();
 
 
-$clientNonce = "A0394B2F298F03699B97A3BD29ADCB03C375ECDD";
-$serverNonce = "9C41A03630A1AC28174401E834E21BBA2EA523D7";
-$salt = '260C152FD22082DB5E875E53994CAE750B98AC372B06C516';
+//$clientNonce = "A0394B2F298F03699B97A3BD29ADCB03C375ECDD";
+//$serverNonce = "9C41A03630A1AC28174401E834E21BBA2EA523D7";
+//$salt = '260C152FD22082DB5E875E53994CAE750B98AC372B06C516';
 
 pp($clientNonce);
 
@@ -50,8 +50,8 @@ $response = $client->request('POST', 'http://172.16.10.62:8082/bs-core/auth/firs
 $arr = json_decode((string)$response->getBody(), true);
 pre($arr);
 
-$arr['data']['serverNonce'] = $serverNonce;
-$arr['data']['salt'] = $salt;
+//$arr['data']['serverNonce'] = $serverNonce;
+//$arr['data']['salt'] = $salt;
 
 /* 2. исходя из ответа сервера определим стратегию клиентской аунтентификации */
 $dispatcher = new AuthStrategyDispatcher();

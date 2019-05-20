@@ -1,53 +1,18 @@
 <?php
 
-$data = '123zЯ';
-
-iconv(mb_detect_encoding($data, mb_detect_order(), true), "UTF-8", $data);
-print_r(mb_detect_encoding($data));
-
-$key = '260C152FD22082DB5E875E53994CAE750B98AC372B06C516';
-
-$int1 = "\0\0\0\1";
-$int1 = bin2hex($int1);
-$u1 = hash_hmac('SHA1', $data, $key . $int1);
-
-$u2 = hash_hmac('SHA1',$data, $key);
-
-print_r('$data: '.$data.'<br>');
-print_r('$key: '.$key.'<br>');
-
-print_r('hmac($data, $key + int1): '.$u1.PHP_EOL.'<br>');
-print_r('hmac($data, $key): '.$u2.PHP_EOL.'<br>');
-
-
-print_r('$key + INT(1): '.$key.$int1.PHP_EOL.'<br>');
+$password = '123zЯ';
 
 
 
-$data = '123';
+$salt = '260C152FD22082DB5E875E53994CAE750B98AC372B06C516';
+$password = "123zЯ";
 
-$key = 'secret';
-print_r('$data: '.$data.'<br>');
-print_r('$key: '.$key.'<br>');
-
-print_r('hash_hmac(\'SHA1\', $data, $key): '.hash_hmac('SHA1', $data, $key).'<br>');
-print_r('hash_hmac(\'SHA1\', $data, $key): '.hash_hmac('SHA1', $data, $key).'<br>');
+$saltedPassword = hash_pbkdf2('sha1', $password, hex2bin($salt), 4096);
+print_r('$saltedPassword: '. $saltedPassword.'<br>');
 
 
-
-$data = '123zЯ';
-$secret = '260C152FD22082DB5E875E53994CAE750B98AC372B06C516';
-print_r('$data: '.$data.'<br>');
-print_r('$secret: '.$secret.'<br>');
+$saltedPassword = '08f09c501b671dd3ea29e010aef634f929657c74';
+$clientKey = hash_hmac('SHA1',"",hex2bin($saltedPassword),0);
 
 
-$int1 = "\0\0\0\1";
-print_r('$int1: '.$int1.'<br>');
-print_r('$secret.$int1: '.$secret.bin2hex($int1).'<br>');
-
-$secret_int1 = $secret.bin2hex($int1);
-print_r('hash_hmac(\'SHA1\', $data, $secret): '.hash_hmac('SHA1', $data, $secret).'<br>');
-print_r('hash_hmac(\'SHA1\', $data, $secret_int1): '.hash_hmac('SHA1', $data, $secret_int1).'<br>');
-
-print_r('hash_hmac(\'SHA1\', $data, hex2bin($secret)): '.hash_hmac('SHA1', $data, hex2bin($secret)).'<br>');
-print_r('hash_hmac(\'SHA1\', $data, hex2bin($secret_int1)): '.hash_hmac('SHA1', $data, hex2bin($secret_int1)).'<br>');
+print_r('$clientKey: '. $clientKey.'<br>');

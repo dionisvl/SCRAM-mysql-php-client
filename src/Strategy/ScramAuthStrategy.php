@@ -115,28 +115,35 @@ class ScramAuthStrategy extends AbstractAuthStrategy implements IAuthStrategy
 
         $saltedPassword = $this->hi($password, $salt, $i);
 
-        $clientKey = hash_hmac($algo,$saltedPassword, "", TRUE);
-
-        $storedKey = $this->compute($clientKey, TRUE);
-        $authMessage = $clientNonce . $serverNonce;
-
-        $clientSignature = hash_hmac($algo, $storedKey, hex2bin($authMessage), TRUE);
-
-        $clientProof = $clientKey ^ $clientSignature;
-
+        $clientKey = hash_hmac($algo, "",$saltedPassword);
         pre('password: '.$password);
         pre('$saltedPassword: '.bin2hex($saltedPassword).'<br>');
+        pre('$clientKey: '.$clientKey.'<br>');
+
+
+        $storedKey = $this->compute(hex2bin($clientKey),1 );
+        $authMessage = $clientNonce . $serverNonce;
+
+        $clientSignature = hash_hmac($algo, hex2bin($authMessage),$storedKey, TRUE);
+
+        $clientProof = hex2bin($clientKey) ^ $clientSignature;
+
+
+        pre('$storedKey: '.$storedKey.'<br>');
+        pre('$authMessage: '.$authMessage.'<br>');
+        pre('$clientSignature: '.bin2hex($clientSignature).'<br>');
+        pre('$clientProof: '.bin2hex($clientProof).'<br>');
         pre('$salt: '.$salt.'<br>');
         pre('$i: '.$i.'<br>');
         pre('$algo: '.$algo.'<br>');
         pre('$clientNonce: '.$clientNonce.'<br>');
         pre('$serverNonce: '.$serverNonce.'<br>');
-        pre('$clientKey: '.bin2hex($clientKey).'<br>');
-        pre('$storedKey: '.$storedKey.'<br>');
-        pre('$authMessage: '.$authMessage.'<br>');
+
+
+
         pre('hex2bin($authMessage): '.hex2bin($authMessage).'<br>');
-        pre('$clientSignature: '.$clientSignature.'<br>');
-        pre('$clientProof: '.$clientProof.'<br>');
+
+
         pre('bin2hex($clientProof): '.strtoupper (bin2hex($clientProof)).'<br>');
 
 //        print_r('$salt: '.$salt.PHP_EOL);
@@ -163,7 +170,7 @@ class ScramAuthStrategy extends AbstractAuthStrategy implements IAuthStrategy
 
     /**
      * Hi() call, which is essentially PBKDF2 (RFC-2898) with HMAC-H() as the pseudorandom function.
-     *
+     * @example : return hash_pbkdf2($algo, $data, hex2bin($key), $i);
      * @param string $str The string to hash.
      * @param string $hash The hash value.
      * @param int $i The iteration count.
@@ -171,28 +178,28 @@ class ScramAuthStrategy extends AbstractAuthStrategy implements IAuthStrategy
      *
      * @return string
      */
-    private function hi($str, $salt, $i)
+    private function hi($data, $key, $i)
     {
         $algo = $this->getHashAlg();
-
-        pre($str);
-        pre($salt);
-
-
         $int1 = "\0\0\0\1";
-        $int1 = bin2hex($int1);
-        $ui = hash_hmac($algo, $str, hex2bin($salt . $int1), 0);
-        pre('$ui FIRST: '.bin2hex($ui).'<br>');
+//        pre('data: '.$data);
+//        pre('key: '.$key);
+        $salt_int = $key.bin2hex($int1);
+        //$salt_int = '260C152FD22082DB5E875E53994CAE750B98AC372B06C51600000001';
+
+        //print_r('$salt_int: '.$key.bin2hex($int1).'<br>');
+        $ui = hash_hmac($algo, hex2bin($salt_int), $data,1);//base_convert($salt_int,16,2)
+        //print_r('u1: '.bin2hex($ui).'<br>');
         $result = $ui;
         for ($k = 1; $k < $i; $k++)
         {
-            $ui = hash_hmac($algo, $str, $ui, 0);
+            $ui = hash_hmac($algo,$ui,$data,1);
             $result = $result ^ $ui;
-
-            pre("u$k: ".bin2hex($result).'<br>');
-
-            if ($k>5) break;
+            //echo "u",$k+1,": ".bin2hex($ui).'<br>';
+            //echo "result",$k+1,": ".bin2hex($result).'<br>';
+            //if ($k>5) die();
         }
         return $result;
+        //return hash_pbkdf2($algo, $data, hex2bin($key), $i);
     }
 }
