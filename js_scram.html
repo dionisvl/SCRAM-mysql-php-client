@@ -1,0 +1,343 @@
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-sha256/0.9.0/sha256.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-sha512/0.8.0/sha512.min.js"></script>
+
+<script src="https://peterolson.github.io/BigInteger.js/BigInteger.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsSHA/2.3.1/sha.js"></script>
+<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/jsSHA/2.3.1/sha256.js"></script>-->
+<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/jsSHA/2.3.1/sha512.js"></script>-->
+
+html hello
+<script>
+    //********************* invoke fetch: ***************************************//
+    let algo = 'SHA1';
+
+    let iterationCount = 0;
+    let protocolVer = 2;
+
+    let params = {
+        action: 'http://172.16.10.62:8082/bs-core/auth/first-message',
+        userName: 'admin_scram_sha1',//admin_mysql_sha1
+        userPassword: '123zЯ',
+        customer_key: 'qa',
+        clientNonce: createClientNonce(40)
+    };
+
+    console.log('1 clientNonce: ' + params.clientNonce);
+    /* 1. Сначала сделаем handShake. Отправим логин и clientNonce на сервер */
+    createHandShake(params)
+        .then(success => {
+            resultA = success;
+            console.log(success);
+            return resultA;
+        })
+
+        /* 2. исходя из ответа сервера определим стратегию клиентской аунтентификации */
+        .then(success => check_auth(
+            'http://172.16.10.62:8082/bs-core/auth/final-message',
+            params.userName,
+            success.data.clientNonce,
+            success.data.encryptedServerNonce,
+            success.data.authMode,
+            params.customer_key,
+            success.data.salt,
+            success.data.iterationCount
+        ))
+        .then(success => {
+            resultB = success;
+            console.log(success);
+            return resultB;
+        });
+
+
+    //********************* methods: ***************************************//
+
+    function createHandShake(params) {
+        console.log('clientNonce: ' + params.clientNonce);
+        const payload = {
+            userName: params.userName,
+            clientNonce: params.clientNonce,
+
+        };
+
+        return fetch(params.action, {
+            method: "POST",
+            body: JSON.stringify(payload),
+            headers: new Headers({
+                'Accept': 'application/json',
+                'customer-key': params.customer_key,
+                'Content-type': 'application/json'
+            })
+        })
+            .then(r => r.json());
+    }
+
+
+    function check_auth(action, userName, serverNonce, encryptedServerNonce, authMode, customer_key, salt, i) {
+
+        let protocolVersion = authMode.split('_')[0];
+        algo = authMode.split('_')[1];
+        console.log('algo: ' + algo);
+        algo = formatAlgo(algo);
+        console.log('formattedAlgo: ' + algo);
+        console.log('protocolVersion: ' + protocolVersion);
+        serverNonce = serverNonce.toLowerCase();
+
+        let p = params.userPassword;
+
+
+        //+salt = this->getSalt();
+        //+i = this->getiterationCount();
+
+        let clientNonce = params.clientNonce;
+        //+serverNonce = this->getServerNonce();
+
+
+        let saltedPassword = hi(algo, p, salt, i);
+        console.log('$saltedPassword: ' + saltedPassword);
+        let clientKey = hash_hmac_empty(algo,saltedPassword  , 'HEX', 'HEX');
+        console.log('$clientKey: ' + clientKey);
+        console.log('password: '+ p);
+
+
+
+        let storedKey = hash(algo, clientKey, 'BYTES', 'BYTES'); //need raw output
+        authMessage = clientNonce.serverNonce;
+        clientSignature = hash_hmac(algo, authMessage, storedKey, 'BYTES', 'BYTES');
+        clientProof = hex2bin(clientKey) ^ clientSignature;
+
+        const payload = {
+            userName: userName,
+            serverNonce: serverNonce,
+            encryptedServerNonce: encryptedServerNonce,
+            authMode: authMode,
+            clientNonce: params.clientNonce,
+            clientProof: bin2hex(clientProof),
+
+        };
+        return fetch(action, {
+            method: "POST",
+            body: JSON.stringify(payload),
+            headers: new Headers({
+                'Accept': 'application/json',
+                'customer-key': customer_key,
+                'Content-type': 'application/json'
+            })
+        })
+            .then(r => r.json());
+    }
+
+    /**
+     * php PBKDF2 analog
+     */
+    function hi(algo, data, key, i) {
+        console.log('hi data: ' + data);
+        console.log('hi key: ' + key);
+        // key = str2hex(key);
+        // console.log('hi str2hex(key): ' + key);
+        let int1 = "\0\0\0\1";
+        let salt_int = key + bin2hex(int1);
+        //salt_int = '260C152FD22082DB5E875E53994CAE750B98AC372B06C51600000001';
+
+        let ui = hash_hmac(algo, salt_int, data, 'HEX', 'HEX');
+
+        console.log('u1: ' + ui);
+
+        let result = ui;
+        for (let k = 1; k < i; k++) {
+            ui = hash_hmac(algo, ui, data, 'HEX', 'HEX');
+            result = hexXor(result , ui);
+
+            // console.log('u'+k+': '+ui);
+            // console.log('result'+k+': '+result);
+            // if (k > 5) break;
+        }
+        return result;
+    }
+    /**
+     * inputType - can be one of HEX, TEXT, B64, BYTES, or ARRAYBUFFER
+     * outputType - B64, HEX, BYTES, or ARRAYBUFFER
+     */
+    function hash_hmac(algo, data, key, inputType, outputType) {
+        // console.log('algo: '+algo);
+        // console.log('inputType: '+inputType);
+        let shaObj = new jsSHA(algo, inputType);
+        shaObj.setHMACKey(key, 'TEXT');
+        shaObj.update(data);
+        return shaObj.getHMAC(outputType);
+    }
+
+    function hash_hmac_empty(algo, data, inputType, outputType) {
+        // console.log('algo: '+algo);
+        // console.log('inputType: '+inputType);
+        let shaObj = new jsSHA(algo, inputType);
+        shaObj.setHMACKey(data, 'HEX');
+        shaObj.update('');
+        return shaObj.getHMAC(outputType);
+    }
+
+    //********************* other scripts: ***************************************//
+
+    function utoa(str) {
+        return window.btoa(unescape(encodeURIComponent(str)));
+    }
+    // base64 encoded ascii to ucs-2 string
+    function atou(str) {
+        return decodeURIComponent(escape(window.atob(str)));
+    }
+
+    /**
+     * inputType - can be one of HEX, TEXT, B64, BYTES, or ARRAYBUFFER
+     * outputType - B64, HEX, BYTES, or ARRAYBUFFER
+     */
+    function hash(algo, data, inputType, outputType) {
+        let shaObj = new jsSHA(algo, inputType);
+        shaObj.update(data);
+        return shaObj.getHash(outputType);
+    }
+
+
+
+    function hex2text(hex) {
+        var str = '';
+        for (var i = 0; i < hex.length; i += 2) {
+            var v = parseInt(hex.substr(i, 2), 16);
+            if (v) str += String.fromCharCode(v);
+        }
+        return str;
+    }
+
+    /**
+     * JavaScript XOR for STRING
+     * */
+    function strXor(a, b) {
+        let len = Math.min(a.length, b.length);
+        let arr = new Array(len);
+        for (var i = 0; i < len; ++i)
+            arr[i] = a.charCodeAt(i) ^ b.charCodeAt(i);
+        return String.fromCharCode.apply(null, arr);
+    }
+
+    function hexXor(a, b) {
+        var res = "",
+            l = Math.max(a.length, b.length);
+        for (var i=0; i<l; i+=4)
+            res = ("000"+(parseInt(a.slice(-i-4, -i||a.length), 16) ^ parseInt(b.slice(-i-4, -i||b.length), 16)).toString(16)).slice(-4) + res;
+        return res;
+    }
+
+    //еще один запасной вариант на всякий случай:
+    // function hexXor(a, b) {
+    //     var res = "",
+    //         i = a.length,
+    //         j = b.length;
+    //     while (i-->0 && j-->0)
+    //         res = (parseInt(a.charAt(i), 16) ^ parseInt(b.charAt(j), 16)).toString(16) + res;
+    //     return res;
+    // }
+
+
+
+    function formatAlgo(algo) {
+        formattedAlgo = '';
+        switch (algo) {
+            case 'SHA1':
+                formattedAlgo = 'SHA-1';
+                break;
+            case 'SHA256':
+                favoriteAlgo = 'SHA-256';
+                break;
+            case 'SHA512':
+                favoriteAlgo = 'SHA-512';
+                break;
+            default:
+                throw ('Bad hash algo choosen:' + algo);
+        }
+        return formattedAlgo;
+    }
+
+    function str2hex(str) {
+        var hex = '';
+        for (var i = 0; i < str.length; i++) {
+            hex += '' + str.charCodeAt(i).toString(16);
+        }
+        return hex;
+    }
+
+    function hex2bin(s) {
+        //  discuss at: http://locutus.io/php/hex2bin/
+        // original by: Dumitru Uzun (http://duzun.me)
+        //   example 1: hex2bin('44696d61')
+        //   returns 1: 'Dima'
+        //   example 2: hex2bin('00')
+        //   returns 2: '\x00'
+        //   example 3: hex2bin('2f1q')
+        //   returns 3: false
+
+        var ret = [];
+        var i = 0;
+        var l;
+
+        s += '';
+
+        for (l = s.length; i < l; i += 2) {
+            var c = parseInt(s.substr(i, 1), 16);
+            var k = parseInt(s.substr(i + 1, 1), 16);
+            if (isNaN(c) || isNaN(k)) return false;
+            ret.push((c << 4) | k)
+        }
+
+        return String.fromCharCode.apply(String, ret)
+    }
+
+    function dec2bin(num) {
+        return parseInt(num, 10).toString(2);
+    }
+
+    function bin2hex(s) {
+        // Converts the binary representation of data to hex
+        //
+        // version: 812.316
+        // discuss at: http://phpjs.org/functions/bin2hex
+        // +   original by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+        // +   bugfixed by: Onno Marsman
+        // +   bugfixed by: Linuxworld
+        // *     example 1: bin2hex('Kev');
+        // *     returns 1: '4b6576'
+        // *     example 2: bin2hex(String.fromCharCode(0x00));
+        // *     returns 2: '00'
+        var v, i, f = 0, a = [];
+        s += '';
+        f = s.length;
+
+        for (i = 0; i < f; i++) {
+            a[i] = s.charCodeAt(i).toString(16).replace(/^([\da-f])$/, "0$1");
+        }
+        return a.join('');
+    }
+
+    /**
+     * Генератор криптографически стойкого случайного числа
+     * generateId :: Integer -> String
+     * @param len
+     * @returns {string}
+     */
+    function createClientNonce(len) {
+        var arr = new Uint8Array((len || 40) / 2);
+        window.crypto.getRandomValues(arr);
+        return Array.from(arr, dec2hex).join('')
+    }
+
+    /**
+     * dec2hex :: Integer -> String
+     * i.e. 0-255 -> '00'-'ff'
+     * @param dec
+     * @returns {string}
+     */
+    function dec2hex(dec) {
+        return ('0' + dec.toString(16)).substr(-2)
+    }
+</script>

@@ -20,7 +20,7 @@ html hello
 
     var params  = {
         action: 'http://172.16.10.62:8082/bs-core/auth/first-message',
-        userName: 'admin_mysql_sha1',
+        userName: 'admin_scram_sha1',// admin_mysql_sha1
         customer_key : 'qa'
     };
     get_serverNonce(params)
@@ -30,12 +30,14 @@ html hello
             return resultA;
         })
         .then(success => check_auth(
-            'http://172.16.10.62:8082/bs-core/auth/final-message',
-            params.userName,
-            success.data.nonce,
-            success.data.encryptedServerNonce,
-            success.data.authMode,
-            params.customer_key
+            {
+                action: 'http://172.16.10.62:8082/bs-core/auth/final-message',
+                userName: params.userName,
+                serverNonce: success.data.serverNonce,
+                encryptedServerNonce: success.data.encryptedServerNonce,
+                authMode: success.data.authMode,
+                customer_key: params.customer_key
+            }
         ))
         .then(success => {
             resultB = success;
@@ -61,8 +63,8 @@ html hello
         })
             .then(r => r.json());
     }
-    function check_auth(action,userName,nonce,encryptedServerNonce,authMode,customer_key) {
-        // nonce = 'D1CDFD86BDC80C9ABE5BE3835B13DCCB4AF7A453';
+    function check_auth({action, userName, serverNonce, encryptedServerNonce, authMode, customer_key}) {
+        // serverNonce = 'D1CDFD86BDC80C9ABE5BE3835B13DCCB4AF7A453';
 
         let protocolVersion = authMode.split('_')[0];
         algo = authMode.split('_')[1];
@@ -72,7 +74,7 @@ html hello
 
         let p = 123;
 
-        let clientProof = strXor(hex2bin(sha(p)) , hex2bin(sha_b64(hex2bin(nonce + sha_b64(hex2bin(sha(p)))))));
+        let clientProof = strXor(hex2bin(sha(p)) , hex2bin(sha_b64(hex2bin(serverNonce + sha_b64(hex2bin(sha(p)))))));
 
         const payload = {
             userName: userName,
