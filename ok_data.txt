@@ -1,19 +1,59 @@
-Расчет clientProof на основе этих данных
+юзера в базе admin_scram_sha1
+пароль: 123zЯ
+
+
+POST /auth/first-message
+{
+    "userName": "admin_scram_sha1",
+    "clientNonce": "A0394B2F298F03699B97A3BD29ADCB03C375ECDD"
+}
+
+response:
+{
+    "status": "ok",
+    "timestamp": 1558100181935,
+    "data": {
+        "userName": "admin_scram_sha1",
+        "clientNonce": "A0394B2F298F03699B97A3BD29ADCB03C375ECDD",
+        "serverNonce": "9C41A03630A1AC28174401E834E21BBA2EA523D7",
+        "encryptedServerNonce": "3017575D4FEC6288AD8A0B295E0F4AF4965998CE2485CFCF1D679BDF471902BCAB0E8239D4CABFE1AD0AE68556A2758F",
+        "authMode": "SCRAM_SHA1",
+        "salt": "260C152FD22082DB5E875E53994CAE750B98AC372B06C516",
+        "iterationCount": 4096
+    }
+}
+
+POST /auth/final-message
+{
+        "userName": "admin_scram_sha1",
+        "clientNonce": "A0394B2F298F03699B97A3BD29ADCB03C375ECDD",
+        "serverNonce": "9C41A03630A1AC28174401E834E21BBA2EA523D7",
+        "encryptedServerNonce": "3017575D4FEC6288AD8A0B295E0F4AF4965998CE2485CFCF1D679BDF471902BCAB0E8239D4CABFE1AD0AE68556A2758F",
+        "clientProof": "953CEBE0CCC85F7F05410FE9E595749B89A0882F"
+}
+
+response:
+{
+    "status": "ok",
+    "timestamp": 1558101362023,
+    "data": 1037
+}
+
+т.е. в этом примере по данным из ответа на auth/first-message нужно чтобы рассчитанный clientProof был равен 953CEBE0CCC85F7F05410FE9E595749B89A0882F
+
+
+*****************************************************************************************
+                    Расчет clientProof на основе этих данных:
+*****************************************************************************************
+
 ------------- ClientProof calc -------------
 password:123zЯ
-saltedPassword: 08F09C501B671DD3EA29E010AEF634F929657C74
-clientKey: 003D99059D8B90A32CDBE25C9DCC7A67C1CACF09
-storedKey: 491A5916DFD1365C00B765D077D4C52CC7789691
++saltedPassword: 08F09C501B671DD3EA29E010AEF634F929657C74
++clientKey: 003D99059D8B90A32CDBE25C9DCC7A67C1CACF09
++storedKey: 491A5916DFD1365C00B765D077D4C52CC7789691
 +authMessage: A0394B2F298F03699B97A3BD29ADCB03C375ECDD9C41A03630A1AC28174401E834E21BBA2EA523D7
-+clientSignature: 950172E55143CFDC299AEDB578590EFC486A4726
++(!)clientSignature: 950172E55143CFDC299AEDB578590EFC486A4726
 clientProof: 953CEBE0CCC85F7F05410FE9E595749B89A0882F
-
-
-
-
-
-
-
 
 для первых 5 итераций цикла:
     U1 = F0F1CA373A5741EACE18BF052A34F183DF8E71F6

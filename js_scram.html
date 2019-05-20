@@ -26,7 +26,6 @@ html hello
         clientNonce: createClientNonce(40)
     };
 
-    console.log('1 clientNonce: ' + params.clientNonce);
     /* 1. Сначала сделаем handShake. Отправим логин и clientNonce на сервер */
     createHandShake(params)
         .then(success => {
@@ -38,11 +37,9 @@ html hello
         /* 2. исходя из ответа сервера определим стратегию клиентской аунтентификации */
         .then(success => check_auth(
             'http://172.16.10.62:8082/bs-core/auth/final-message',
-            params.userName,
-            success.data.clientNonce,
+            success.data.serverNonce,
             success.data.encryptedServerNonce,
             success.data.authMode,
-            params.customer_key,
             success.data.salt,
             success.data.iterationCount
         ))
@@ -60,7 +57,6 @@ html hello
         const payload = {
             userName: params.userName,
             clientNonce: params.clientNonce,
-
         };
 
         return fetch(params.action, {
@@ -76,54 +72,52 @@ html hello
     }
 
 
-    function check_auth(action, userName, serverNonce, encryptedServerNonce, authMode, customer_key, salt, i) {
-
+    function check_auth(action, serverNonce, encryptedServerNonce, authMode, salt, i) {
         let protocolVersion = authMode.split('_')[0];
         algo = authMode.split('_')[1];
         console.log('algo: ' + algo);
         algo = formatAlgo(algo);
-        console.log('formattedAlgo: ' + algo);
-        console.log('protocolVersion: ' + protocolVersion);
-        serverNonce = serverNonce.toLowerCase();
-
         let p = params.userPassword;
-
 
         //+salt = this->getSalt();
         //+i = this->getiterationCount();
 
         let clientNonce = params.clientNonce;
-        //+serverNonce = this->getServerNonce();
-
-
         let saltedPassword = hi(algo, p, salt, i);
+
+        /** Внимание! в случае если key = пустая строка, тогда он меняется местами с Data */
+        let clientKey = hash_hmac(algo,'',saltedPassword, 'HEX','HEX', 'HEX');
+
+        let storedKey = hash(algo, clientKey, 'HEX', 'HEX');
+        let authMessage = clientNonce + serverNonce;
+        let clientSignature = hash_hmac(algo, authMessage, storedKey, 'HEX','HEX', 'HEX');
+        let clientProof = hexXor(clientKey , clientSignature);
+
+
+        console.log('formattedAlgo: ' + algo);
+        console.log('protocolVersion: ' + protocolVersion);
         console.log('$saltedPassword: ' + saltedPassword);
-        let clientKey = hash_hmac_empty(algo,saltedPassword  , 'HEX', 'HEX');
         console.log('$clientKey: ' + clientKey);
         console.log('password: '+ p);
-
-
-
-        let storedKey = hash(algo, clientKey, 'BYTES', 'BYTES'); //need raw output
-        authMessage = clientNonce.serverNonce;
-        clientSignature = hash_hmac(algo, authMessage, storedKey, 'BYTES', 'BYTES');
-        clientProof = hex2bin(clientKey) ^ clientSignature;
-
+        console.log('clientNonce: ' + clientNonce);
+        console.log('storedKey: ' + storedKey);
+        console.log('serverNonce: ' + serverNonce);
+        console.log('authMessage: ' + authMessage);
+        console.log('clientSignature: ' + clientSignature);
+        console.log('clientProof: ' + clientProof);
         const payload = {
-            userName: userName,
+            userName: params.userName,
+            clientNonce: params.clientNonce,
             serverNonce: serverNonce,
             encryptedServerNonce: encryptedServerNonce,
-            authMode: authMode,
-            clientNonce: params.clientNonce,
-            clientProof: bin2hex(clientProof),
-
+            clientProof: clientProof,
         };
         return fetch(action, {
             method: "POST",
             body: JSON.stringify(payload),
             headers: new Headers({
                 'Accept': 'application/json',
-                'customer-key': customer_key,
+                'customer-key': params.customer_key,
                 'Content-type': 'application/json'
             })
         })
@@ -134,21 +128,19 @@ html hello
      * php PBKDF2 analog
      */
     function hi(algo, data, key, i) {
-        console.log('hi data: ' + data);
-        console.log('hi key: ' + key);
-        // key = str2hex(key);
+        // console.log('hi data: ' + data);
+        // console.log('hi key: ' + key);
         // console.log('hi str2hex(key): ' + key);
         let int1 = "\0\0\0\1";
         let salt_int = key + bin2hex(int1);
-        //salt_int = '260C152FD22082DB5E875E53994CAE750B98AC372B06C51600000001';
 
-        let ui = hash_hmac(algo, salt_int, data, 'HEX', 'HEX');
+        let ui = hash_hmac(algo, salt_int, data, 'HEX', 'TEXT', 'HEX');
 
         console.log('u1: ' + ui);
 
         let result = ui;
         for (let k = 1; k < i; k++) {
-            ui = hash_hmac(algo, ui, data, 'HEX', 'HEX');
+            ui = hash_hmac(algo, ui, data, 'HEX', 'TEXT', 'HEX');
             result = hexXor(result , ui);
 
             // console.log('u'+k+': '+ui);
@@ -161,34 +153,16 @@ html hello
      * inputType - can be one of HEX, TEXT, B64, BYTES, or ARRAYBUFFER
      * outputType - B64, HEX, BYTES, or ARRAYBUFFER
      */
-    function hash_hmac(algo, data, key, inputType, outputType) {
+    function hash_hmac(algo, data, key, inputDataType, inputKeyType, outputType) {
         // console.log('algo: '+algo);
         // console.log('inputType: '+inputType);
-        let shaObj = new jsSHA(algo, inputType);
-        shaObj.setHMACKey(key, 'TEXT');
+        let shaObj = new jsSHA(algo, inputDataType);
+        shaObj.setHMACKey(key, inputKeyType);
         shaObj.update(data);
         return shaObj.getHMAC(outputType);
     }
 
-    function hash_hmac_empty(algo, data, inputType, outputType) {
-        // console.log('algo: '+algo);
-        // console.log('inputType: '+inputType);
-        let shaObj = new jsSHA(algo, inputType);
-        shaObj.setHMACKey(data, 'HEX');
-        shaObj.update('');
-        return shaObj.getHMAC(outputType);
-    }
-
     //********************* other scripts: ***************************************//
-
-    function utoa(str) {
-        return window.btoa(unescape(encodeURIComponent(str)));
-    }
-    // base64 encoded ascii to ucs-2 string
-    function atou(str) {
-        return decodeURIComponent(escape(window.atob(str)));
-    }
-
     /**
      * inputType - can be one of HEX, TEXT, B64, BYTES, or ARRAYBUFFER
      * outputType - B64, HEX, BYTES, or ARRAYBUFFER
@@ -197,17 +171,6 @@ html hello
         let shaObj = new jsSHA(algo, inputType);
         shaObj.update(data);
         return shaObj.getHash(outputType);
-    }
-
-
-
-    function hex2text(hex) {
-        var str = '';
-        for (var i = 0; i < hex.length; i += 2) {
-            var v = parseInt(hex.substr(i, 2), 16);
-            if (v) str += String.fromCharCode(v);
-        }
-        return str;
     }
 
     /**
@@ -239,7 +202,27 @@ html hello
     //     return res;
     // }
 
+    /**
+     * Генератор криптографически стойкого случайного числа
+     * generateId :: Integer -> String
+     * @param len
+     * @returns {string}
+     */
+    function createClientNonce(len) {
+        var arr = new Uint8Array((len || 40) / 2);
+        window.crypto.getRandomValues(arr);
+        return Array.from(arr, dec2hex).join('')
+    }
 
+    /**
+     * dec2hex :: Integer -> String
+     * i.e. 0-255 -> '00'-'ff'
+     * @param dec
+     * @returns {string}
+     */
+    function dec2hex(dec) {
+        return ('0' + dec.toString(16)).substr(-2)
+    }
 
     function formatAlgo(algo) {
         formattedAlgo = '';
@@ -319,25 +302,5 @@ html hello
         return a.join('');
     }
 
-    /**
-     * Генератор криптографически стойкого случайного числа
-     * generateId :: Integer -> String
-     * @param len
-     * @returns {string}
-     */
-    function createClientNonce(len) {
-        var arr = new Uint8Array((len || 40) / 2);
-        window.crypto.getRandomValues(arr);
-        return Array.from(arr, dec2hex).join('')
-    }
 
-    /**
-     * dec2hex :: Integer -> String
-     * i.e. 0-255 -> '00'-'ff'
-     * @param dec
-     * @returns {string}
-     */
-    function dec2hex(dec) {
-        return ('0' + dec.toString(16)).substr(-2)
-    }
 </script>
