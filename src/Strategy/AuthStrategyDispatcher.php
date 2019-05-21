@@ -7,8 +7,6 @@ namespace Bs\Sdk\Auth\Strategy;
  * (client side)
  */
 
-use Bs\Sdk\Auth\Encryptors\OpensslHash;
-use Bs\Sdk\Auth\Encryptors\PhpHash;
 use Exception;
 
 class AuthStrategyDispatcher
@@ -20,8 +18,7 @@ class AuthStrategyDispatcher
                 case 'MYSQL':
                     $inst = new MySqlAuthStrategy();
                     $inst->setHashAlg($data['hashAlg']);
-                    $inst->setiterationCount($data['iterationCount']);
-                    $inst->setServerNonce($data['nonce']);
+                    $inst->setServerNonce($data['serverNonce']);
                     break;
                 case 'SCRAM':
                     $inst = new ScramAuthStrategy();

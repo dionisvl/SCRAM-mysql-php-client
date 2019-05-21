@@ -1,29 +1,40 @@
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/js-sha256/0.9.0/sha256.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/js-sha512/0.8.0/sha512.min.js"></script>
-
-<script src="https://peterolson.github.io/BigInteger.js/BigInteger.min.js"></script>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsSHA/2.3.1/sha.js"></script>
 <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/jsSHA/2.3.1/sha256.js"></script>-->
-<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/jsSHA/2.3.1/sha512.js"></script>-->
-
-html hello
+JS SCRAM client example auth v0.2 (open console)
 <script>
+    /**
+     * Клиент scram авторизации на JS
+     *
+     *  - обратимся к серверу, отправим ему login чтобы он вернул serverNonce
+     *  - распарсим ответ сервера и получим serverNonce + авторизационные параметры: algo, encryptor, protocolVer, iterationCount
+     *  - на основе serverNonce сгенерируем client_proof
+     *  - отправим серверу CP и получим ответ ок или нет.
+     *
+     * для scram авторизации параметры:
+     * $user_login = 'admin_scram_sha1';
+     * $user_password = '123zЯ';
+     *
+     * для Mysql параметры:
+     * $user_login = 'admin_mysql_sha1';
+     * $user_password = '123';
+     *
+     * scram sha 256:
+     логин: ĄęŚŃÓKŹ
+     пароль: ĄęŚŃÓKŹ
+
+     scram sha 512:
+     логин: ӨҢҰФҚҒқә
+     пароль: ӨҢҰФҚҒқә
+     */
     //********************* invoke fetch: ***************************************//
-    let algo = 'SHA1';
-
-    let iterationCount = 0;
-    let protocolVer = 2;
-
     let params = {
-        action: 'http://172.16.10.62:8082/bs-core/auth/first-message',
-        userName: 'admin_scram_sha1',//admin_mysql_sha1
-        userPassword: '123zЯ',
+        userName: 'ĄęŚŃÓKŹ',//admin_mysql_sha1
+        userPassword: 'ĄęŚŃÓKŹ',
         customer_key: 'qa',
-        clientNonce: createClientNonce(40)
+        clientNonce: createClientNonce(40),
+        firstMessageUrl: 'http://172.16.10.62:8082/bs-core/auth/first-message',
+        finalMessageUrl: 'http://172.16.10.62:8082/bs-core/auth/final-message',
     };
 
     /* 1. Сначала сделаем handShake. Отправим логин и clientNonce на сервер */
@@ -34,9 +45,9 @@ html hello
             return resultA;
         })
 
-        /* 2. исходя из ответа сервера определим стратегию клиентской аунтентификации */
+        /* 2. исходя из ответа сервера сгенерируем clientProof и попытаемся авторизоваться */
         .then(success => check_auth(
-            'http://172.16.10.62:8082/bs-core/auth/final-message',
+            params.finalMessageUrl,
             success.data.serverNonce,
             success.data.encryptedServerNonce,
             success.data.authMode,
@@ -53,13 +64,13 @@ html hello
     //********************* methods: ***************************************//
 
     function createHandShake(params) {
-        console.log('clientNonce: ' + params.clientNonce);
+        // console.log('clientNonce: ' + params.clientNonce);
         const payload = {
             userName: params.userName,
             clientNonce: params.clientNonce,
         };
 
-        return fetch(params.action, {
+        return fetch(params.firstMessageUrl, {
             method: "POST",
             body: JSON.stringify(payload),
             headers: new Headers({
@@ -72,39 +83,30 @@ html hello
     }
 
 
+
     function check_auth(action, serverNonce, encryptedServerNonce, authMode, salt, i) {
-        let protocolVersion = authMode.split('_')[0];
-        algo = authMode.split('_')[1];
-        console.log('algo: ' + algo);
+        let protocolVersion = authMode.split('_')[0];//authMode Это строка на подобие "SCRAM_SHA1"
+        let algo = authMode.split('_')[1];
+
         algo = formatAlgo(algo);
+        console.log('f_algo: '+ algo);
+        console.log('protocolVersion: '+ protocolVersion);
+
         let p = params.userPassword;
-
-        //+salt = this->getSalt();
-        //+i = this->getiterationCount();
-
         let clientNonce = params.clientNonce;
-        let saltedPassword = hi(algo, p, salt, i);
 
-        /** Внимание! в случае если key = пустая строка, тогда он меняется местами с Data */
-        let clientKey = hash_hmac(algo,'',saltedPassword, 'HEX','HEX', 'HEX');
+        let clientProof = '';
+        switch (protocolVersion){
+            case 'SCRAM':
+                clientProof = clientProofScram();
+                break;
+            case 'MYSQL':
+                clientProof = clientProofMysql();
+                break;
+            default:
+                throw 'invalid protocolVersion: ' + protocolVersion;
+        }
 
-        let storedKey = hash(algo, clientKey, 'HEX', 'HEX');
-        let authMessage = clientNonce + serverNonce;
-        let clientSignature = hash_hmac(algo, authMessage, storedKey, 'HEX','HEX', 'HEX');
-        let clientProof = hexXor(clientKey , clientSignature);
-
-
-        console.log('formattedAlgo: ' + algo);
-        console.log('protocolVersion: ' + protocolVersion);
-        console.log('$saltedPassword: ' + saltedPassword);
-        console.log('$clientKey: ' + clientKey);
-        console.log('password: '+ p);
-        console.log('clientNonce: ' + clientNonce);
-        console.log('storedKey: ' + storedKey);
-        console.log('serverNonce: ' + serverNonce);
-        console.log('authMessage: ' + authMessage);
-        console.log('clientSignature: ' + clientSignature);
-        console.log('clientProof: ' + clientProof);
         const payload = {
             userName: params.userName,
             clientNonce: params.clientNonce,
@@ -122,21 +124,57 @@ html hello
             })
         })
             .then(r => r.json());
+
+
+        function clientProofScram(){
+            let saltedPassword = hi(algo, p, salt, i);
+            /** Внимание! в случае если key = пустая строка, тогда он меняется местами с Data */
+            let clientKey = hash_hmac(algo,'',saltedPassword, 'HEX','HEX', 'HEX');
+            let storedKey = hash(algo, clientKey, 'HEX', 'HEX');
+            let authMessage = clientNonce + serverNonce;
+            let clientSignature = hash_hmac(algo, authMessage, storedKey, 'HEX','HEX', 'HEX');
+            clientProof = hexXor(clientKey , clientSignature);
+            /*console.log('algo: ' + algo);
+             console.log('formattedAlgo: ' + algo);
+             console.log('protocolVersion: ' + protocolVersion);
+             console.log('$saltedPassword: ' + saltedPassword);
+             console.log('$clientKey: ' + clientKey);
+             console.log('password: '+ p);
+             console.log('clientNonce: ' + clientNonce);
+             console.log('storedKey: ' + storedKey);
+             console.log('serverNonce: ' + serverNonce);
+             console.log('authMessage: ' + authMessage);
+             console.log('clientSignature: ' + clientSignature);
+             console.log('clientProof: ' + clientProof);*/
+            return clientProof;
+        }
+
+        function clientProofMysql(){
+            //В Mysql пароль хешируется по формуле SELECT SHA1(UNHEX(SHA1('123')));
+            // образец: $client_proof_binary = hex2bin(sha1($p)) ^ hex2bin(sha1(hex2bin($serverNonce.sha1(hex2bin(sha1($p))))));
+            let leftPart = hash(algo,p,'TEXT','HEX');
+            let storedPassword = hash(algo,hash(algo,p,'TEXT','HEX'),'HEX','HEX');
+            let rightPart = hash(algo,serverNonce + storedPassword,'HEX','HEX');
+            clientProof = hexXor(leftPart , rightPart);
+            /*console.log('leftPart: '+leftPart);
+            console.log('storedPassword: '+storedPassword);
+            console.log('rightPart: '+rightPart);
+            console.log('clientProof: '+clientProof);*/
+            return clientProof;
+        }
     }
 
     /**
      * php PBKDF2 analog
      */
     function hi(algo, data, key, i) {
-        // console.log('hi data: ' + data);
-        // console.log('hi key: ' + key);
-        // console.log('hi str2hex(key): ' + key);
         let int1 = "\0\0\0\1";
         let salt_int = key + bin2hex(int1);
-
         let ui = hash_hmac(algo, salt_int, data, 'HEX', 'TEXT', 'HEX');
-
-        console.log('u1: ' + ui);
+        // console.log('hi data: ' + data);
+        // console.log('hi key: ' + key);
+        // console.log('hi salt_int: ' + salt_int);
+        //console.log('u1: ' + ui);
 
         let result = ui;
         for (let k = 1; k < i; k++) {
@@ -161,8 +199,6 @@ html hello
         shaObj.update(data);
         return shaObj.getHMAC(outputType);
     }
-
-    //********************* other scripts: ***************************************//
     /**
      * inputType - can be one of HEX, TEXT, B64, BYTES, or ARRAYBUFFER
      * outputType - B64, HEX, BYTES, or ARRAYBUFFER
@@ -173,34 +209,23 @@ html hello
         return shaObj.getHash(outputType);
     }
 
-    /**
-     * JavaScript XOR for STRING
-     * */
-    function strXor(a, b) {
-        let len = Math.min(a.length, b.length);
-        let arr = new Array(len);
-        for (var i = 0; i < len; ++i)
-            arr[i] = a.charCodeAt(i) ^ b.charCodeAt(i);
-        return String.fromCharCode.apply(null, arr);
+    //********************* other scripts: ***************************************//
+    function formatAlgo(algo) {
+        switch (algo) {
+            case 'SHA1':
+                algo = 'SHA-1';
+                break;
+            case 'SHA256':
+                algo = 'SHA-256';
+                break;
+            case 'SHA512':
+                algo = 'SHA-512';
+                break;
+            default:
+                throw ('Bad hash algo choosen:' + algo);
+        }
+        return algo;
     }
-
-    function hexXor(a, b) {
-        var res = "",
-            l = Math.max(a.length, b.length);
-        for (var i=0; i<l; i+=4)
-            res = ("000"+(parseInt(a.slice(-i-4, -i||a.length), 16) ^ parseInt(b.slice(-i-4, -i||b.length), 16)).toString(16)).slice(-4) + res;
-        return res;
-    }
-
-    //еще один запасной вариант на всякий случай:
-    // function hexXor(a, b) {
-    //     var res = "",
-    //         i = a.length,
-    //         j = b.length;
-    //     while (i-->0 && j-->0)
-    //         res = (parseInt(a.charAt(i), 16) ^ parseInt(b.charAt(j), 16)).toString(16) + res;
-    //     return res;
-    // }
 
     /**
      * Генератор криптографически стойкого случайного числа
@@ -224,60 +249,12 @@ html hello
         return ('0' + dec.toString(16)).substr(-2)
     }
 
-    function formatAlgo(algo) {
-        formattedAlgo = '';
-        switch (algo) {
-            case 'SHA1':
-                formattedAlgo = 'SHA-1';
-                break;
-            case 'SHA256':
-                favoriteAlgo = 'SHA-256';
-                break;
-            case 'SHA512':
-                favoriteAlgo = 'SHA-512';
-                break;
-            default:
-                throw ('Bad hash algo choosen:' + algo);
-        }
-        return formattedAlgo;
-    }
-
-    function str2hex(str) {
-        var hex = '';
-        for (var i = 0; i < str.length; i++) {
-            hex += '' + str.charCodeAt(i).toString(16);
-        }
-        return hex;
-    }
-
-    function hex2bin(s) {
-        //  discuss at: http://locutus.io/php/hex2bin/
-        // original by: Dumitru Uzun (http://duzun.me)
-        //   example 1: hex2bin('44696d61')
-        //   returns 1: 'Dima'
-        //   example 2: hex2bin('00')
-        //   returns 2: '\x00'
-        //   example 3: hex2bin('2f1q')
-        //   returns 3: false
-
-        var ret = [];
-        var i = 0;
-        var l;
-
-        s += '';
-
-        for (l = s.length; i < l; i += 2) {
-            var c = parseInt(s.substr(i, 1), 16);
-            var k = parseInt(s.substr(i + 1, 1), 16);
-            if (isNaN(c) || isNaN(k)) return false;
-            ret.push((c << 4) | k)
-        }
-
-        return String.fromCharCode.apply(String, ret)
-    }
-
-    function dec2bin(num) {
-        return parseInt(num, 10).toString(2);
+    function hexXor(a, b) {
+        var res = "",
+            l = Math.max(a.length, b.length);
+        for (var i=0; i<l; i+=4)
+            res = ("000"+(parseInt(a.slice(-i-4, -i||a.length), 16) ^ parseInt(b.slice(-i-4, -i||b.length), 16)).toString(16)).slice(-4) + res;
+        return res;
     }
 
     function bin2hex(s) {
@@ -301,6 +278,4 @@ html hello
         }
         return a.join('');
     }
-
-
 </script>

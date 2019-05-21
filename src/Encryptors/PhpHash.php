@@ -14,5 +14,4 @@ class PhpHash implements HashInterface
     {
         return hash($algo, $string,$raw_output);
     }
-
 }

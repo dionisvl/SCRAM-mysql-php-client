@@ -2,7 +2,6 @@
 
 namespace Bs\Sdk\Auth\Encryptors;
 
-
 /**
  * https://www.php.net/manual/ru/function.openssl-digest.php
  *

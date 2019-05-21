@@ -1,6 +1,5 @@
 <?php
 
-
 /**
  * Клиент scram авторизации на PHP
  *
@@ -8,6 +7,22 @@
  *  - распарсим ответ сервера и получим serverNonce + авторизационные параметры: algo, encryptor, protocolVer, iterationCount
  *  - на основе serverNonce сгенерируем client_proof
  *  - отправим серверу CP и получим ответ ок или нет.
+ *
+ * для scram авторизации параметры:
+ * $user_login = 'admin_scram_sha1';
+ * $user_password = '123zЯ';
+ *
+ * для Mysql параметры:
+ * $user_login = 'admin_mysql_sha1';
+ * $user_password = '123';
+ *
+ *      * scram sha 256:
+логин: ĄęŚŃÓKŹ
+пароль: ĄęŚŃÓKŹ
+
+scram sha 512:
+логин: ӨҢҰФҚҒқә
+пароль: ӨҢҰФҚҒқә
  */
 
 
@@ -20,8 +35,8 @@ use Bs\Sdk\Auth\Strategy\RandomString;
 
 /* 1. Сначала сделаем handShake. Отправим логин и clientNonce на сервер */
 
-$user_login = 'admin_scram_sha1';
-$user_password = '123zЯ';
+$user_login = 'ĄęŚŃÓKŹ';
+$user_password = 'ĄęŚŃÓKŹ';
 
 $customer_key = 'qa';
 $client = new GuzzleHttp\Client();
@@ -67,19 +82,24 @@ $strategy = $dispatcher->resolveStrategy($params);
 
 $data = array_map('trim', $_REQUEST);
 if (!empty($data['encryptor'])) { //phphash or openssl
+    switch ($data['encryptor']) {
+        case 'openssl':
+            $strategy->setEncryptor(new OpensslHash());
+            break;
+        case 'phphash':
+            $strategy->setEncryptor(new PhpHash());
+            break;
+        default:
+            throw new \RuntimeException('Error: Bad $encryptor version: ' . $data['encryptor']);
+    }
     print_r('encryptor : ' . $data['encryptor'] . '<br>' . PHP_EOL);
-} else throw new Exception('<<Encryptor not setted>>.');
-
-switch ($data['encryptor']) {
-    case 'openssl':
-        $strategy->setEncryptor(new OpensslHash());
-        break;
-    case 'phphash':
-        $strategy->setEncryptor(new PhpHash());
-        break;
-    default:
-        throw new \RuntimeException('Error: Bad $encryptor version: ' . $data['encryptor']);
+} else {
+    $strategy->setEncryptor(new PhpHash());
+    print_r('default PhpHash encryptor  setted. <br>' . PHP_EOL);
+    //throw new Exception('<<Encryptor not setted>>.');
 }
+
+
 
 /* 2.1 Сгенерируем client proof */
 $client_proof = $strategy->createClientProof($user_password);
@@ -122,14 +142,4 @@ function pre($arr)
     echo '<pre>';
     echo print_r($arr, 1);
     echo '</pre>';
-}
-
-function String2Hex($string)
-{
-    return implode(unpack("H*", $string));
-}
-
-function hexToStr($hex)
-{//должно работать так же как и hex2bin ( string $data ) : string
-    return pack("H*", $hex);
 }

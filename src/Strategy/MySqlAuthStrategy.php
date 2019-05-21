@@ -5,10 +5,28 @@ namespace Bs\Sdk\Auth\Strategy;
 
 class MySqlAuthStrategy extends AbstractAuthStrategy implements IAuthStrategy
 {
-
     private $hashAlg;
-    private $iterationCount;
     private $serverNonce;
+
+    public function createClientProof($p)
+    {
+        //В Mysql пароль хешируется по формуле SELECT SHA1(UNHEX(SHA1('123')));
+        $serverNonce = $this->getServerNonce();
+
+        $client_proof_binary = $this->hash($p,1) ^ $this->hash(hex2bin($serverNonce.$this->hash($this->hash($p,1),0)),1);
+        //$client_proof_binary = hex2bin(sha1($p)) ^ hex2bin(sha1(hex2bin($serverNonce.sha1(hex2bin(sha1($p))))));
+        $client_proof_hex = bin2hex($client_proof_binary);
+
+        /*
+        print_r('$serverNonce: '.$serverNonce.'<br>');
+        print_r('$client_proof_binary: '.$client_proof_binary.'<br>');
+        print_r('$client_proof_hex: '.bin2hex($client_proof_binary).'<br>');*/
+        return $client_proof_hex;
+    }
+
+    private function hash($mystring,$raw_output){
+        return ($this->getEncryptor())->hash($mystring, $this->getHashAlg(),$raw_output);
+    }
 
     /**
      * @param mixed $hashAlg
@@ -19,22 +37,12 @@ class MySqlAuthStrategy extends AbstractAuthStrategy implements IAuthStrategy
     }
 
     /**
-     * @param mixed $iterationCount
-     */
-    public function setiterationCount($iterationCount): void
-    {
-        $this->iterationCount = $iterationCount;
-    }
-
-    /**
      * @param mixed $serverNonce
      */
     public function setServerNonce($serverNonce): void
     {
         $this->serverNonce = $serverNonce;
     }
-
-
 
     /**
      * @return mixed
@@ -47,32 +55,8 @@ class MySqlAuthStrategy extends AbstractAuthStrategy implements IAuthStrategy
     /**
      * @return mixed
      */
-    public function getiterationCount()
-    {
-        return $this->iterationCount;
-    }
-
-    /**
-     * @return mixed
-     */
     public function getServerNonce()
     {
         return $this->serverNonce;
-    }
-
-    public function createClientProof($p)
-    {
-        //В Mysql пароль хешируется по формуле SELECT SHA1(UNHEX(SHA1('123')));
-        $serverNonce = $this->getServerNonce();
-
-        $client_proof_binary = $this->compute($p,1) ^ $this->compute(hex2bin($serverNonce.$this->compute($this->compute($p,1),0)),1);
-        //$client_proof_binary = hex2bin(sha1($p)) ^ hex2bin(sha1(hex2bin($serverNonce.sha1(hex2bin(sha1($p))))));
-        $client_proof_hex = bin2hex($client_proof_binary);
-
-        return $client_proof_hex;
-    }
-
-    private function compute($mystring,$raw_output){
-        return ($this->getEncryptor())->hash($mystring, $this->getHashAlg(),$raw_output);
     }
 }

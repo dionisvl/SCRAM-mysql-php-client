@@ -6,6 +6,9 @@ http://scramc/?encryptor=openssl
 или  
 http://scramc/?encryptor=phphash  
 
+описание тестовых данных смотри в ok_data.txt
+
+```
 сначала дергается метод ядра:  
 /auth/first-message  
 в теле пост передаётся логин юзера:  
@@ -33,7 +36,7 @@ http://scramc/?encryptor=phphash
          "encryptedServerNonce": "96BE15A60721B3F54DEB82C6594BC4384A3EE1361A82B7CC7A00735F0A4A626421C4F7ED413E32FA26AFD928368AFA5A",
          "clientProof": "рассчитанный client proof"
  }
- 
+ ```
  #### итоговый вариант scram:   
  SaltedPassword := Hi(Normalize(password), salt, i)  
  ClientKey := HMAC(SaltedPassword, "")  
@@ -52,3 +55,8 @@ http://scramc/?encryptor=phphash
  Ui := HMAC(str, Ui-1)  
  
  Hi := U1 XOR U2 XOR ... XOR Ui  
+ 
+ 
+ ## JS client  
+ обязательно должен быть установлен мета тег:  
+ < meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
