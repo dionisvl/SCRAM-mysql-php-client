@@ -1,0 +1,109 @@
+На текущий момент window.crypto.subtle.deriveKey работает только на HTTPS
+<div class="col-lg-8">
+
+
+    <h2 class="mt-4"><a id="The_Demo_4"></a>The PBKDF2 Demo</h2>
+    <label><b>Input Iteration in Numbers:</b></label>
+    <input class="form-control"
+           onkeypress="if (!window.__cfRLUnblockHandlers) return false; if ( isNaN(this.value + String.fromCharCode(event.keyCode) )) return false;"
+           type="text" id="iteration" size="5" value="1000">
+    <br>
+    <label><b>Provide Password:</b></label>
+    <input class="form-control" type="text" id="password"
+           value="hello8gwifi"><br>
+    <br>
+    <input class="btn btn-primary" type="button" onclick="generateKey1()" value="Generate PBKDF2 Keys">
+    <hr>
+    PBKDF2 Derived Key (Hex): <input class="form-control" readonly="true" size="100" type="text" id="key"><br>
+    Random Salt (Hex) : <input class="form-control" readonly="true" type="text" size="60" id="salt"><br>
+    <small>Note: Using Fixed salt will generate the same derive key</small>
+    <hr>
+
+
+</div>
+
+
+<script type="text/javascript">
+
+
+    function generateKey(password, iterations, saltBuffer) {
+        // salt should be Uint8Array or ArrayBuffer
+
+
+        var encoder = new TextEncoder('utf-8');
+        var passphraseKey = encoder.encode("password");
+
+        // You should firstly import your passphrase Uint8array into a CryptoKey
+        window.crypto.subtle.importKey(
+            'raw',
+            passphraseKey,
+            {name: 'PBKDF2'},
+            false,
+            ['deriveBits', 'deriveKey']
+        ).then(function (key) {
+
+            return window.crypto.subtle.deriveKey(
+                {
+                    "name": 'PBKDF2',
+                    "salt": saltBuffer,
+                    // don't get too ambitious, or at least remember
+                    // that low-power phones will access your app
+                    "iterations": iterations,
+                    "hash": 'SHA-256'
+                },
+                key,
+
+                // Note: for this demo we don't actually need a cipher suite,
+                // but the api requires that it must be specified.
+                // For AES the length required to be 128 or 256 bits (not bytes)
+                {"name": 'AES-CBC', "length": 256},
+
+                // Whether or not the key is extractable (less secure) or not (more secure)
+                // when false, the key can only be passed as a web crypto object, not inspected
+                true,
+
+                // this web crypto object will only be allowed for these functions
+                ["encrypt", "decrypt"]
+            )
+        }).then(function (webKey) {
+
+            return crypto.subtle.exportKey("raw", webKey);
+
+        }).then(function (buffer) {
+
+            document.getElementById("key").value = bytesToHexString(buffer);
+            document.getElementById("salt").value = bytesToHexString(saltBuffer);
+        });
+
+    }
+
+
+    function bytesToHexString(bytes) {
+        if (!bytes)
+            return null;
+
+        bytes = new Uint8Array(bytes);
+        var hexBytes = [];
+
+        for (var i = 0; i < bytes.length; ++i) {
+            var byteString = bytes[i].toString(16);
+            if (byteString.length < 2)
+                byteString = "0" + byteString;
+            hexBytes.push(byteString);
+        }
+
+        return hexBytes.join("");
+    }
+
+    function generateKey1() {
+        var password = document.getElementById("password").value;
+        var iteration = document.getElementById("iteration").value;
+
+        var saltBuffer = crypto.getRandomValues(new Uint8Array(8));
+
+
+        generateKey(password, iteration, saltBuffer);
+    }
+
+
+</script>

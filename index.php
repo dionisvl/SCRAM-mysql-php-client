@@ -17,12 +17,12 @@
  * $user_password = '123';
  *
  *      * scram sha 256:
-логин: ĄęŚŃÓKŹ
-пароль: ĄęŚŃÓKŹ
-
-scram sha 512:
-логин: ӨҢҰФҚҒқә
-пароль: ӨҢҰФҚҒқә
+ * логин: ĄęŚŃÓKŹ
+ * пароль: ĄęŚŃÓKŹ
+ *
+ * scram sha 512:
+ * логин: ӨҢҰФҚҒқә
+ * пароль: ӨҢҰФҚҒқә
  */
 
 
@@ -35,8 +35,8 @@ use Bs\Sdk\Auth\Strategy\RandomString;
 
 /* 1. Сначала сделаем handShake. Отправим логин и clientNonce на сервер */
 
-$user_login = 'ĄęŚŃÓKŹ';
-$user_password = 'ĄęŚŃÓKŹ';
+$user_login = 'ӨҢҰФҚҒқә';
+$user_password = 'ӨҢҰФҚҒқә';
 
 $customer_key = 'qa';
 $client = new GuzzleHttp\Client();
@@ -47,19 +47,24 @@ $clientNonce = (new RandomString())->handle();
 //$serverNonce = "9C41A03630A1AC28174401E834E21BBA2EA523D7";
 //$salt = '260C152FD22082DB5E875E53994CAE750B98AC372B06C516';
 
-$response = $client->request('POST', 'http://172.16.10.62:8082/bs-core/auth/first-message', [
-    'headers' => [
-        'customer-key' => $customer_key,
-        'content-type' => 'application/json'
-    ],
-    'json' => [
-        'userName' => $user_login,
-        'clientNonce' => $clientNonce
-    ]
-]);
+print_r('client nonce: '.$clientNonce.'<br>');
+try {
+    $response = $client->request('POST', 'http://172.16.10.62:8082/bs-core/auth/first-message', [
+        'headers' => [
+            'customer-key' => $customer_key,
+            'content-type' => 'application/json'
+        ],
+        'json' => [
+            'userName' => $user_login,
+            'clientNonce' => $clientNonce
+        ]
+    ]);
+    $arr = json_decode((string)$response->getBody(), true);
+    pre($arr);
 
-$arr = json_decode((string)$response->getBody(), true);
-pre($arr);
+} catch (\GuzzleHttp\Exception\RequestException $e) {
+    pre('failed response body: ' . json_encode(json_decode($e->getResponse()->getBody()), 128 + 256));
+}
 
 //$arr['data']['serverNonce'] = $serverNonce;
 //$arr['data']['salt'] = $salt;
@@ -98,7 +103,6 @@ if (!empty($data['encryptor'])) { //phphash or openssl
     print_r('default PhpHash encryptor  setted. <br>' . PHP_EOL);
     //throw new Exception('<<Encryptor not setted>>.');
 }
-
 
 
 /* 2.1 Сгенерируем client proof */
