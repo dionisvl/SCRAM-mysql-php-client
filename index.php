@@ -35,8 +35,8 @@ use Bs\Sdk\Auth\Strategy\RandomString;
 
 /* 1. Сначала сделаем handShake. Отправим логин и clientNonce на сервер */
 
-$user_login = 'ӨҢҰФҚҒқә';
-$user_password = 'ӨҢҰФҚҒқә';
+$user_login = 'admin_scram_sha1';
+$user_password = '123zЯ';
 
 $customer_key = 'qa';
 $client = new GuzzleHttp\Client();
@@ -49,7 +49,7 @@ $clientNonce = (new RandomString())->handle();
 
 print_r('client nonce: '.$clientNonce.'<br>');
 try {
-    $response = $client->request('POST', 'http://172.16.10.62:8082/bs-core/auth/first-message', [
+    $response = $client->request('POST', 'https://qa-saas.brainysoft.ru/bs-core/auth/first-message', [
         'headers' => [
             'customer-key' => $customer_key,
             'content-type' => 'application/json'
@@ -81,7 +81,7 @@ $params['clientNonce'] = $clientNonce;
 $params['iterationCount'] = $arr['data']['iterationCount'];
 $params['salt'] = $arr['data']['salt'];
 
-pre('$params[\'hashAlg\']: ' . $params['hashAlg']);
+pre($params);
 
 $strategy = $dispatcher->resolveStrategy($params);
 
@@ -125,7 +125,7 @@ $request = [
 pre('request: ' . json_encode($request, 128 + 256));
 
 try {
-    $response = $client->request('POST', 'http://172.16.10.62:8082/bs-core/auth/final-message', [
+    $response = $client->request('POST', 'https://qa-saas.brainysoft.ru/bs-core/auth/final-message', [
         'headers' => [
             'customer-key' => $customer_key,
             'content-type' => 'application/json'
@@ -133,8 +133,15 @@ try {
         'json' => $request
     ]);
 
+    pre('body:');
     $arr = json_decode((string)$response->getBody(), true);
     pre($arr);
+
+    pre('headers:');
+    $arr = $response->getHeaders();
+    pre($arr);
+
+
 
 } catch (\GuzzleHttp\Exception\RequestException $e) {
     pre('failed response body: ' . json_encode(json_decode($e->getResponse()->getBody()), 128 + 256));

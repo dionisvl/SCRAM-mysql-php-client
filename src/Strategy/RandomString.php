@@ -15,7 +15,7 @@ class RandomString
      * @param int $length
      * @throws \Exception
      */
-    function __construct($length = 40)
+    function __construct(int $length = 40)
     {
         //$chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
         $chars = '0123456789ABCDEF'; //HEX

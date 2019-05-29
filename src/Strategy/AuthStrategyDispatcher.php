@@ -15,6 +15,15 @@ class AuthStrategyDispatcher
     {
 //        try {
             switch ($data['protocolVersion']) {
+                case 'reducedScram':
+                    $inst = new ReducedScramAuthStrategy();
+                    $inst->setHashAlg($data['hashAlg']);
+
+                    $inst->setServiceKey($data['serviceKey']);
+                    $inst->setServiceName($data['serviceName']);
+                    $inst->setTimestamp($data['timestamp']);
+                    $inst->setSecureRandom($data['secureRandom']);
+                    break;
                 case 'MYSQL':
                     $inst = new MySqlAuthStrategy();
                     $inst->setHashAlg($data['hashAlg']);

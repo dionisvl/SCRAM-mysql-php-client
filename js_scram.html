@@ -29,12 +29,12 @@ JS SCRAM client example auth v0.2 (open console)
      */
     //********************* invoke fetch: ***************************************//
     let params = {
-        userName: 'ӨҢҰФҚҒқә',//admin_mysql_sha1
-        userPassword: 'ӨҢҰФҚҒқә',
+        userName: 'admin_mysql_sha1',//admin_mysql_sha1
+        userPassword: '123',
         customer_key: 'qa',
         clientNonce: createClientNonce(40),
-        firstMessageUrl: 'http://172.16.10.62:8082/bs-core/auth/first-message',
-        finalMessageUrl: 'http://172.16.10.62:8082/bs-core/auth/final-message',
+        firstMessageUrl: 'https://qa-saas.brainysoft.ru/bs-core/auth/first-message',
+        finalMessageUrl: 'https://qa-saas.brainysoft.ru/bs-core/auth/final-message',
     };
 
     /* 1. Сначала сделаем handShake. Отправим логин и clientNonce на сервер */
