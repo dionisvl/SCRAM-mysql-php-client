@@ -49,7 +49,7 @@ $clientNonce = (new RandomString())->handle();
 
 print_r('client nonce: '.$clientNonce.'<br>');
 try {
-    $response = $client->request('POST', 'https://qa-saas.brainysoft.ru/bs-core/auth/first-message', [
+    $response = $client->request('POST', 'https://qa-saas.brainysoft.ru/bs-core/auth/challenge', [
         'headers' => [
             'customer-key' => $customer_key,
             'content-type' => 'application/json'
@@ -125,7 +125,7 @@ $request = [
 pre('request: ' . json_encode($request, 128 + 256));
 
 try {
-    $response = $client->request('POST', 'https://qa-saas.brainysoft.ru/bs-core/auth/final-message', [
+    $response = $client->request('POST', 'https://qa-saas.brainysoft.ru/bs-core/auth/proof', [
         'headers' => [
             'customer-key' => $customer_key,
             'content-type' => 'application/json'

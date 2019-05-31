@@ -22,7 +22,7 @@ class AuthStrategyDispatcher
                     $inst->setServiceKey($data['serviceKey']);
                     $inst->setServiceName($data['serviceName']);
                     $inst->setTimestamp($data['timestamp']);
-                    $inst->setSecureRandom($data['secureRandom']);
+                    $inst->setServiceNonce($data['serviceNonce']);
                     break;
                 case 'MYSQL':
                     $inst = new MySqlAuthStrategy();

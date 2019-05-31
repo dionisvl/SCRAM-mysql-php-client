@@ -3,8 +3,6 @@
 
 namespace Bs\Sdk\Auth\Strategy;
 
-use Bs\Sdk\Auth\Strategy\RandomString;
-
 
 class ReducedScramAuthStrategy extends AbstractAuthStrategy implements IAuthStrategy
 {
@@ -12,7 +10,7 @@ class ReducedScramAuthStrategy extends AbstractAuthStrategy implements IAuthStra
 
     private $serviceName;
     private $serviceKey;
-    private $secureRandom;
+    private $serviceNonce;
     private $timestamp;
 
     public function createClientProof($clientKey)
@@ -20,11 +18,10 @@ class ReducedScramAuthStrategy extends AbstractAuthStrategy implements IAuthStra
         $algo = $this->getHashAlg();
         $serviceKey = $this->getServiceKey();
         $serviceName = $this->getServiceName();
-        $secureRandom = $this->getSecureRandom();//serviceSecret
+        $serviceNonce = $this->getServiceNonce();//serviceNonce
         $timestamp = $this->getTimestamp();
 
-        $authMessage = $timestamp . $secureRandom . $serviceKey . $serviceName;
-        //$authMessage = 'A0394B2F298F03699B97A3BD29ADCB03C375ECDD9C41A03630A1AC28174401E834E21BBA2EA523D7';
+        $authMessage = $timestamp . $serviceNonce . $serviceKey . $serviceName;
         $authMessage = hex2bin($authMessage);
 
         $storedKey = $this->hash(hex2bin($clientKey), 1);
@@ -33,13 +30,9 @@ class ReducedScramAuthStrategy extends AbstractAuthStrategy implements IAuthStra
 
         $clientProof = hex2bin($clientKey) ^ $clientSignature;
 
-
-        print_r('$algo: ' . $algo . '<br>');
-        print_r('$ServiceKey: ' . $this->getServiceKey() . '<br>');
-        print_r('$serviceName: ' . $serviceName . '<br>');
-        print_r('$secureRandom(serviceSecret): ' . $secureRandom . '<br>');
+        print_r('$serviceNonce: ' . $serviceNonce . '<br>');
         print_r('$timestamp: ' . $timestamp . '<br>');
-        print_r('$authMessage=$timestamp + $secureRandom(serviceSecret) + $serviceKey + $serviceName = ' . bin2hex($authMessage) . '<br>');
+        print_r('$authMessage=$timestamp + $serviceNonce + $serviceKey + $serviceName = ' . bin2hex($authMessage) . '<br>');
 
 
         print_r('$clientKey: ' . $clientKey . '<br>');
@@ -63,17 +56,17 @@ class ReducedScramAuthStrategy extends AbstractAuthStrategy implements IAuthStra
     /**
      * @return mixed
      */
-    public function getSecureRandom()
+    public function getServiceNonce()
     {
-        return $this->secureRandom;
+        return $this->serviceNonce;
     }
 
     /**
      * @param mixed $secureRandom
      */
-    public function setSecureRandom($secureRandom): void
+    public function setServiceNonce($serviceNonce): void
     {
-        $this->secureRandom = $secureRandom;
+        $this->serviceNonce = $serviceNonce;
     }
 
     /**

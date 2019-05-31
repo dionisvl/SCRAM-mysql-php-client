@@ -2,7 +2,7 @@
 пароль: 123zЯ
 
 
-POST /auth/first-message
+POST /auth/challenge
 {
     "userName": "admin_scram_sha1",
     "clientNonce": "A0394B2F298F03699B97A3BD29ADCB03C375ECDD"
@@ -23,7 +23,7 @@ response:
     }
 }
 
-POST /auth/final-message
+POST /auth/proof
 {
         "userName": "admin_scram_sha1",
         "clientNonce": "A0394B2F298F03699B97A3BD29ADCB03C375ECDD",
@@ -39,7 +39,7 @@ response:
     "data": 1037
 }
 
-т.е. в этом примере по данным из ответа на auth/first-message нужно чтобы рассчитанный clientProof был равен 953CEBE0CCC85F7F05410FE9E595749B89A0882F
+т.е. в этом примере по данным из ответа на auth/challenge нужно чтобы рассчитанный clientProof был равен 953CEBE0CCC85F7F05410FE9E595749B89A0882F
 
 
 *****************************************************************************************

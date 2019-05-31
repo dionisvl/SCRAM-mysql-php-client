@@ -10,7 +10,7 @@ http://scramc/?encryptor=phphash
 
 ```
 сначала дергается метод ядра:  
-/auth/first-message  
+/auth/challenge  
 в теле пост передаётся логин юзера:  
 {
     "userName": "admin_mysql_sha1",
@@ -29,7 +29,7 @@ http://scramc/?encryptor=phphash
  
  
  вычисляешь clientProof и дергаешь метод ядра:  
- /auth/final-message  
+ /auth/proof  
  {
          "userName": "admin_mysql_sha1",
          "serverNonce": "793A4B72859A775445F8400E9481AFD3BACAD69F",
