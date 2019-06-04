@@ -8,7 +8,6 @@ class ReducedScramAuthStrategy extends AbstractAuthStrategy implements IAuthStra
 {
     private $hashAlg;
 
-    private $serviceName;
     private $serviceKey;
     private $serviceNonce;
     private $timestamp;
@@ -17,11 +16,10 @@ class ReducedScramAuthStrategy extends AbstractAuthStrategy implements IAuthStra
     {
         $algo = $this->getHashAlg();
         $serviceKey = $this->getServiceKey();
-        $serviceName = $this->getServiceName();
         $serviceNonce = $this->getServiceNonce();//serviceNonce
         $timestamp = $this->getTimestamp();
 
-        $authMessage = $timestamp . $serviceNonce . $serviceKey . $serviceName;
+        $authMessage = $timestamp . $serviceNonce . $serviceKey;
         $authMessage = hex2bin($authMessage);
 
         $storedKey = $this->hash(hex2bin($clientKey), 1);
@@ -32,7 +30,7 @@ class ReducedScramAuthStrategy extends AbstractAuthStrategy implements IAuthStra
 
         print_r('$serviceNonce: ' . $serviceNonce . '<br>');
         print_r('$timestamp: ' . $timestamp . '<br>');
-        print_r('$authMessage=$timestamp + $serviceNonce + $serviceKey + $serviceName = ' . bin2hex($authMessage) . '<br>');
+        print_r('$authMessage=$timestamp + $serviceNonce + $serviceKey = ' . bin2hex($authMessage) . '<br>');
 
 
         print_r('$clientKey: ' . $clientKey . '<br>');
@@ -116,22 +114,4 @@ class ReducedScramAuthStrategy extends AbstractAuthStrategy implements IAuthStra
     {
         $this->serviceKey = $serviceKey;
     }
-
-    /**
-     * @return mixed
-     */
-    public function getServiceName()
-    {
-        return $this->serviceName;
-    }
-
-    /**
-     * @param mixed $serviceName
-     */
-    public function setServiceName($serviceName): void
-    {
-        $this->serviceName = $serviceName;
-    }
-
-
 }

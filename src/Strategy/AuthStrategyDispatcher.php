@@ -20,7 +20,6 @@ class AuthStrategyDispatcher
                     $inst->setHashAlg($data['hashAlg']);
 
                     $inst->setServiceKey($data['serviceKey']);
-                    $inst->setServiceName($data['serviceName']);
                     $inst->setTimestamp($data['timestamp']);
                     $inst->setServiceNonce($data['serviceNonce']);
                     break;

@@ -32,10 +32,11 @@ print_r('$saltedPassword hash_pbkdf2(): ' . $saltedPassword . '<br>');
 print_r('$ClientKey: ' . $ClientKey . '<br>');
 $serviceKey = str_replace('-','','0c04117b-93c1-4531-afb7-2f57615997bd');//it is UUID v4
 $serviceName = 'Тестовый активный сервис';
+print_r('$serviceName: ' . $serviceName . '<br>');
 $serviceName = implode(unpack("H*", $serviceName));
 print_r('$algo: ' . $algo . '<br>');
 print_r('$ServiceKey: ' . $serviceKey . '<br>');
-print_r('$serviceName: ' . $serviceName . '<br>');
+
 print_r('-------------то что выше было рассчитано автоматически заранее, это константа------------------------- <br>');
 
 
@@ -44,7 +45,6 @@ $dispatcher = new AuthStrategyDispatcher();
 
 $params['protocolVersion'] = 'reducedScram';
 
-$params['serviceName'] = $serviceName;
 $params['serviceKey'] = $serviceKey;
 $params['serviceNonce'] = (new RandomString(40))->handle();
 $params['timestamp'] = dechex(time());
@@ -88,9 +88,8 @@ pre('bin2hex($clientProof): '.$clientProof.PHP_EOL);
 $headers = [
     //'Content-Type' => 'application/json',
     'customer-key' => 'qa',
-    'bsauth' => 'YyL2gsmJKSIVuQK2IsKr7Djt6pUERpeeIWItV20T66r1qPJ+DLS8VlKmIpLkHLDC2l+p4LRWIBE=',
+    'bsauth' => '4583FPY0ZqS8P6C9jd4d5q2RH70dFFS7gvB7UD98YwzhLEj0pvJGdHBHf671lZ4hADYgvPlvPD0d9N8Yw8VUmIFJpvu/IW+uMtwfnr1e6BD3QMfWJiZ1Vhrj8lzGEvwM',
     'service-key' => $serviceKey,
-    'service-name' => $serviceName,
     'service-nonce' => $params['serviceNonce'],//serviceNonce
     'service-timestamp' => $params['timestamp'],
     'service-proof' => $clientProof
@@ -101,7 +100,6 @@ $headers = [
 //    //'customer-key' => 'qa',
 //    'bsauth' => 'gJHlDefmBfZQs0dwM6VPb9Gv4hGozHK+MkJqZjVYqRZXxQN9YIAWIPPoGa8Orj7dmG1w9Z8QVgA=',
 //    'service-key' => '77C30FDA7A799BF0D9D838D395CF9DE1E3136F65',
-//    'service-name' => '666173746d6f6e657937',
 //    'service-nonce' => '77C30FDA7A799BF0D9D838D395CF9DE1E3136F65',
 //    'service-timestamp' => '5ce7a169',
 //    'service-proof' => '51b65629b65fe8af20a9bc266bc02200a68b1b016a840cd5303aa06ea5d620dcca38bc2133ea74e5f8310252320fefc6ef3b1bb7248f8daf0ab1a6c8fce9cc00'
