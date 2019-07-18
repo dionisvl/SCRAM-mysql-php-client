@@ -1,6 +1,21 @@
 # SCRAM-mysql-php-client
-Клиент scram авторизации на PHP
+Клиенты scram авторизации на PHP и JS  
+На текущий момент работает 3 варианта авторизации:
+* Простая - передача BSAUTH в заголовке
+* half SCRAM - ограниченный вариант SCRAM Авторизации
 
+### 1 JS SCRAM client  
+
+Для запуска тестового кода js_scram.html необходимо запускать в хроме с отключеной защитой CORS.  
+Инструкция: https://alfilatov.com/posts/run-chrome-without-cors/  
+Обязательно должен быть установлен мета тег:  
+`<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">`
+ 
+### 2 PHP simple/halfSCRAM/SCRAM client
+В PHP клиенте реализован паттерн-стратегия которая выбирает текущий вариант авторизации в зависимости от ответа сервера 
+на первом шаге либо от параметров инициализации
+
+Возможен выбор кодировщика внутри PHP openssl или phphash      
 Encryptor передается в Url, пример:  
 http://scramc/?encryptor=openssl  
 или  
@@ -57,6 +72,27 @@ http://scramc/?encryptor=phphash
  Hi := U1 XOR U2 XOR ... XOR Ui  
  
  
- ## JS client  
- обязательно должен быть установлен мета тег:  
- < meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+## Какие поля учавствуют в HALF-SCRAM авторизации
+half SCRAM состоит из одного шага.  
+Сервер автоматически проверяет наличие нужных полей и если имеется полный комплект тогда активируется 
+соответствующая авторизация.  
+Вот список заголовков (headers) передаваемых в случае ограниченной scram авторизации:
+```
+    'customer-key' => Кодовое название клиента
+    'bsauth' => временный токен что живет 30 минут
+    'service-key' => Ключ сервиса в формате UUID v4 без тире "-"
+    'service-nonce' => Случайная строка HEX длиной 40символов
+    'service-timestamp' => Unix timestamp в HEX формате
+    'service-proof' => (clientProof) Вычисляемое клиентом значение по формуле.
+```
+Формула:
+``` 
+    i = Количество итераций для функции hash_pbkdf2
+    algo = Алгоритм хеширования, например sha или sha512
+    saltedPassword = hash_pbkdf2(algo, password, hex2bin(salt), i);
+    ClientKey = hash_hmac(algo,"",hex2bin(saltedPassword),0);
+    
+    authMessage = timestamp . serviceNonce . serviceKey;
+    storedKey:= hash(ClientKey)
+    clientSignature:= hash_hmac(algo, authMessage, storedKey)
+    clientProof := ClientKey XOR clientSignature

@@ -16,7 +16,7 @@
  * $user_login = 'admin_mysql_sha1';
  * $user_password = '123';
  *
- *      * scram sha 256:
+ * scram sha 256:
  * логин: ĄęŚŃÓKŹ
  * пароль: ĄęŚŃÓKŹ
  *
@@ -35,8 +35,8 @@ use Bs\Sdk\Auth\Strategy\RandomString;
 
 /* 1. Сначала сделаем handShake. Отправим логин и clientNonce на сервер */
 
-$user_login = 'admin_scram_sha1';
-$user_password = '123zЯ';
+$user_login = 'ӨҢҰФҚҒқә';
+$user_password = 'ӨҢҰФҚҒқә';
 
 $customer_key = 'qa';
 $client = new GuzzleHttp\Client();
@@ -64,6 +64,7 @@ try {
 
 } catch (\GuzzleHttp\Exception\RequestException $e) {
     pre('failed response body: ' . json_encode(json_decode($e->getResponse()->getBody()), 128 + 256));
+    die('response failed!');
 }
 
 //$arr['data']['serverNonce'] = $serverNonce;

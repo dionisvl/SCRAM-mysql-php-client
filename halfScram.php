@@ -5,6 +5,14 @@
  *
  * Внимание, необходимо вставлять всегда свежий BSauth
  * у него время действия пол часа где то
+ *
+ * Как получить свежий bsauth? а вот так:
+ *  GET  https://qa-saas.{YOUR_DOMAIN}.ru/bs-core/dicts/countries
+ * в заголовке указать :
+ *      Content-Type:application/json
+        bsauth:{bsauth пользователя и желательно qa}
+ *  в успешном ответе увидим тело со списком стран и в заголовке bsauth который будет свежим
+ * PROFIT
  */
 
 
@@ -88,7 +96,7 @@ pre('bin2hex($clientProof): '.$clientProof.PHP_EOL);
 $headers = [
     //'Content-Type' => 'application/json',
     'customer-key' => 'qa',
-    'bsauth' => '4583FPY0ZqS8P6C9jd4d5q2RH70dFFS7gvB7UD98YwzhLEj0pvJGdHBHf671lZ4hADYgvPlvPD0d9N8Yw8VUmIFJpvu/IW+uMtwfnr1e6BD3QMfWJiZ1Vhrj8lzGEvwM',
+    'bsauth' => 'G38YbLmPDcNt8ghqXIgGv+bbkgf6xY5rC2xTcFp5z2Vx8pXyEEzyn2Ca8/5ya515w1SkDdP6K7M=',
     'service-key' => $serviceKey,
     'service-nonce' => $params['serviceNonce'],//serviceNonce
     'service-timestamp' => $params['timestamp'],
