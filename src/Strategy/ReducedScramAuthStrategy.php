@@ -33,11 +33,11 @@ class ReducedScramAuthStrategy extends AbstractAuthStrategy implements IAuthStra
         print_r('$authMessage=$timestamp + $serviceNonce + $serviceKey = ' . bin2hex($authMessage) . '<br>');
 
 
-        print_r('$clientKey: ' . $clientKey . '<br>');
+        print_r('$storedKey = hash($clientKey) = ' . bin2hex($storedKey) . '<br>');
 
-        print_r('$storedKey: ' . bin2hex($storedKey) . '<br>');
-        print_r('$clientSignature: ' . bin2hex($clientSignature) . '<br>');
-        print_r('$clientProof: ' . bin2hex($clientProof) . '<br>');
+
+        print_r('$clientSignature = hash_hmac(algo,authMessage,storedKey) = ' . bin2hex($clientSignature) . '<br>');
+//        print_r('$clientProof (service-proof): ' . bin2hex($clientProof) . '<br>');
 
 
         return $clientProof;

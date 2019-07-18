@@ -1,19 +1,22 @@
 # SCRAM-mysql-php-client
 Клиенты scram авторизации на PHP и JS  
-На текущий момент работает 3 варианта авторизации:
+На текущий момент работает 2 варианта авторизации:
 * Простая - передача BSAUTH в заголовке
 * half SCRAM - ограниченный вариант SCRAM Авторизации
 
 ### 1 JS SCRAM client  
-
+В этом репозитории на JS реализованна только SCRAM и MYSQL авторизация (в файле js_scram.html)  
 Для запуска тестового кода js_scram.html необходимо запускать в хроме с отключеной защитой CORS.  
 Инструкция: https://alfilatov.com/posts/run-chrome-without-cors/  
 Обязательно должен быть установлен мета тег:  
 `<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">`
  
 ### 2 PHP simple/halfSCRAM/SCRAM client
+
 В PHP клиенте реализован паттерн-стратегия которая выбирает текущий вариант авторизации в зависимости от ответа сервера 
 на первом шаге либо от параметров инициализации
+Реализованы simple/MYSQL-scram/halfScram/SCRAM варианты  авторизаций  
+
 
 Возможен выбор кодировщика внутри PHP openssl или phphash      
 Encryptor передается в Url, пример:  
@@ -79,7 +82,6 @@ half SCRAM состоит из одного шага.
 Вот список заголовков (headers) передаваемых в случае ограниченной scram авторизации:
 ```
     'customer-key' => Кодовое название клиента
-    'bsauth' => временный токен что живет 30 минут
     'service-key' => Ключ сервиса в формате UUID v4 без тире "-"
     'service-nonce' => Случайная строка HEX длиной 40символов
     'service-timestamp' => Unix timestamp в HEX формате

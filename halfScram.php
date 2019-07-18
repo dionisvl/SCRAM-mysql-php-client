@@ -3,11 +3,9 @@
 /**
  * Ограниченный временный клиент scram авторизации на PHP
  *
- * Внимание, необходимо вставлять всегда свежий BSauth
- * у него время действия пол часа где то
  *
  * Как получить свежий bsauth? а вот так:
- *  GET  https://qa-saas.{YOUR_DOMAIN}.ru/bs-core/dicts/countries
+ *  GET  https://alpha-qa.{YOUR_DOMAIN}.ru/bs-core/dicts/countries
  * в заголовке указать :
  *      Content-Type:application/json
         bsauth:{bsauth пользователя и желательно qa}
@@ -37,7 +35,7 @@ print_r('$password: ' . $password . '<br>');
 print_r('$salt: ' . $salt . '<br>');
 print_r('$i: ' . $i . '<br>');
 print_r('$saltedPassword hash_pbkdf2(): ' . $saltedPassword . '<br>');
-print_r('$ClientKey: ' . $ClientKey . '<br>');
+print_r('$clientKey: ' . $ClientKey . '<br>');
 $serviceKey = str_replace('-','','0c04117b-93c1-4531-afb7-2f57615997bd');//it is UUID v4
 $serviceName = 'Тестовый активный сервис';
 print_r('$serviceName: ' . $serviceName . '<br>');
@@ -45,7 +43,7 @@ $serviceName = implode(unpack("H*", $serviceName));
 print_r('$algo: ' . $algo . '<br>');
 print_r('$ServiceKey: ' . $serviceKey . '<br>');
 
-print_r('-------------то что выше было рассчитано автоматически заранее, это константа------------------------- <br>');
+print_r('-------------то что выше было рассчитано автоматически заранее, это константы ------------------------- <br>');
 
 
 /* 2. исходя из ответа сервера определим стратегию клиентской аунтентификации */
@@ -88,15 +86,15 @@ if (!empty($data['hashAlg'])) { //SHA1/SHA256/sha3
 
 /* 2.1 Сгенерируем client proof */
 $clientProof = $strategy->createClientProof($ClientKey);
-pre('$client_proof: ' . $clientProof . PHP_EOL);
+//pre('$client_proof binary: ' . $clientProof . PHP_EOL);
 $clientProof = bin2hex($clientProof);
-pre('bin2hex($clientProof): '.$clientProof.PHP_EOL);
+pre('$clientProof (service-proof) = clientKey XOR clientSignature = '.$clientProof.PHP_EOL);
 
 /* 3 отправим серверу все half-scram заголовки и CP На проверку */
 $headers = [
     //'Content-Type' => 'application/json',
     'customer-key' => 'qa',
-    'bsauth' => 'G38YbLmPDcNt8ghqXIgGv+bbkgf6xY5rC2xTcFp5z2Vx8pXyEEzyn2Ca8/5ya515w1SkDdP6K7M=',
+    //'bsauth' => 'U3CHnyVDD3WshO0aW+KNsxVEZyQpT0OYCUypfSzKP0gaw22S+3cFCUC0LXbnS0QqHPWT93ODANg=',
     'service-key' => $serviceKey,
     'service-nonce' => $params['serviceNonce'],//serviceNonce
     'service-timestamp' => $params['timestamp'],
@@ -117,7 +115,7 @@ pre('$headers: ');
 pre($headers);
 $client = new GuzzleHttp\Client();
 try {
-    $response = $client->request('GET', 'https://qa-saas.brainysoft.ru/bs-core/dicts/countries', [
+    $response = $client->request('GET', 'https://alpha-qa.brainysoft.ru/bs-core/dicts/countries', [
         'headers' => $headers
     ]);
 
